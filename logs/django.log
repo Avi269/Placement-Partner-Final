@@ -1,0 +1,16 @@
+INFO 2025-07-27 01:59:22,826 autoreload 25648 26952 Watching for file changes with StatReloader
+INFO 2025-07-27 01:59:23,024 autoreload 23040 20172 Watching for file changes with StatReloader
+INFO 2025-07-27 01:59:23,144 autoreload 16488 5520 Watching for file changes with StatReloader
+INFO 2025-07-27 01:59:23,498 autoreload 19472 24264 Watching for file changes with StatReloader
+INFO 2025-07-27 01:59:23,790 autoreload 19336 24708 Watching for file changes with StatReloader
+INFO 2025-07-27 02:00:48,960 autoreload 23040 20172 C:\Users\habib\OneDrive\Desktop\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-07-27 02:00:49,109 autoreload 16488 5520 C:\Users\habib\OneDrive\Desktop\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-07-27 02:00:49,374 autoreload 19472 24264 C:\Users\habib\OneDrive\Desktop\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-07-27 02:00:49,569 autoreload 19336 24708 C:\Users\habib\OneDrive\Desktop\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-07-27 02:00:49,725 autoreload 25648 26952 C:\Users\habib\OneDrive\Desktop\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-07-27 02:00:50,250 autoreload 13616 7432 Watching for file changes with StatReloader
+INFO 2025-07-27 02:00:50,359 autoreload 27012 26628 Watching for file changes with StatReloader
+INFO 2025-07-27 02:00:50,599 autoreload 1848 25576 Watching for file changes with StatReloader
+INFO 2025-07-27 02:00:50,781 autoreload 25228 26664 Watching for file changes with StatReloader
+INFO 2025-07-27 02:00:50,947 autoreload 7884 25832 Watching for file changes with StatReloader
+INFO 2025-07-27 02:06:41,408 autoreload 25328 27064 Watching for file changes with StatReloader

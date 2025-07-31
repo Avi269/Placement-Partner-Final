@@ -23,5 +23,3 @@ django-debug-toolbar
 python-decouple
 
 
-
-# [Environment]::SetEnvironmentVariable("GOOGLE_API_KEY", "AIzaSyDepaU8Ku0dNGSp6YOUX4pCFMNNwH4AMf0", "User")

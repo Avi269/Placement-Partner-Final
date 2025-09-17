@@ -20,6 +20,10 @@
     box-sizing: border-box;
 }
 
+html[data-bs-theme] {
+    color-scheme: light !important; /* tells browser it's light */
+}
+
 body {
     font-family: 'Inter', sans-serif;
     line-height: 1.6;
@@ -366,30 +370,6 @@ body {
     
     .stats-number {
         font-size: 2rem;
-    }
-}
-
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    body {
-        background-color: #111827;
-        color: #f9fafb;
-    }
-    
-    .card, .feature-card, .stats-card, .cover-letter-preview, .offer-analysis {
-        background-color: #1f2937;
-        color: #f9fafb;
-    }
-    
-    .form-control {
-        background-color: #374151;
-        border-color: #4b5563;
-        color: #f9fafb;
-    }
-    
-    .form-control:focus {
-        background-color: #374151;
-        color: #f9fafb;
     }
 }
 

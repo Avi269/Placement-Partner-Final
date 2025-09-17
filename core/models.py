@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 import uuid
 import os
 
@@ -17,7 +17,7 @@ def offer_letter_file_path(instance, filename):
 
 class Resume(models.Model):
     """Model for storing resume information"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     file = models.FileField(upload_to=resume_file_path, null=True, blank=True)
     parsed_text = models.TextField(blank=True)
     extracted_skills = models.JSONField(default=list, blank=True)
@@ -34,7 +34,7 @@ class Resume(models.Model):
 
 class JobDescription(models.Model):
     """Model for storing job descriptions"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     title = models.CharField(max_length=255)
     company = models.CharField(max_length=255, blank=True)
     text = models.TextField()
@@ -57,7 +57,7 @@ class CoverLetter(models.Model):
 
 class OfferLetter(models.Model):
     """Model for storing offer letter analysis"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     file = models.FileField(upload_to=offer_letter_file_path, null=True, blank=True)
     text = models.TextField(blank=True)
     explanation = models.TextField(blank=True)
@@ -83,15 +83,3 @@ class SkillGapReport(models.Model):
     def __str__(self):
         return f"Skill Gap Report - {self.fit_score}% fit"
 
-class UserProfile(models.Model):
-    """Model for storing user profile and readiness information"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    readiness_score = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
-    total_applications = models.IntegerField(default=0)
-    interviews_attended = models.IntegerField(default=0)
-    offers_received = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.user.username} - {self.readiness_score}% ready"

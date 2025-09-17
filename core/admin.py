@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Resume, JobDescription, CoverLetter, OfferLetter, SkillGapReport, UserProfile
+from .models import Resume, JobDescription, CoverLetter, OfferLetter, SkillGapReport
 
 @admin.register(Resume)
 class ResumeAdmin(admin.ModelAdmin):
@@ -33,9 +33,3 @@ class SkillGapReportAdmin(admin.ModelAdmin):
     list_filter = ['created_at', 'fit_score']
     search_fields = ['resume__name', 'job_description__title']
     readonly_fields = ['fit_score', 'missing_skills', 'matching_skills', 'suggested_resources']
-
-@admin.register(UserProfile)
-class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'readiness_score', 'total_applications', 'interviews_attended', 'offers_received']
-    list_filter = ['readiness_score', 'created_at']
-    search_fields = ['user__username', 'user__email']

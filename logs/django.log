@@ -381,3 +381,100 @@ WARNING 2025-07-31 00:27:03,897 log 13800 15668 Not Found: /.well-known/appspeci
 INFO 2025-07-31 20:26:33,137 autoreload 22844 21064 Watching for file changes with StatReloader
 WARNING 2025-07-31 20:32:47,422 log 22844 15920 Not Found: /.well-known/appspecific/com.chrome.devtools.json
 WARNING 2025-07-31 20:34:01,416 log 22844 15920 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-07-31 23:54:47,796 autoreload 19572 16892 Watching for file changes with StatReloader
+WARNING 2025-07-31 23:56:33,706 log 19572 20484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-07-31 23:57:14,043 log 19572 20484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-07-31 23:57:26,111 log 19572 20484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-08-02 19:56:12,992 autoreload 12020 5452 Watching for file changes with StatReloader
+WARNING 2025-08-02 19:56:26,417 log 12020 15868 Not Found: /favicon.ico
+INFO 2025-08-19 17:42:47,870 autoreload 18148 13704 Watching for file changes with StatReloader
+INFO 2025-09-17 18:11:06,772 autoreload 18236 9312 Watching for file changes with StatReloader
+INFO 2025-09-17 18:55:42,379 autoreload 13692 16804 Watching for file changes with StatReloader
+INFO 2025-09-17 19:10:59,734 autoreload 5784 13640 Watching for file changes with StatReloader
+WARNING 2025-09-17 19:11:08,250 log 5784 3068 Not Found: /favicon.ico
+INFO 2025-09-17 20:51:36,809 autoreload 14768 16344 Watching for file changes with StatReloader
+WARNING 2025-09-17 20:51:49,864 log 14768 3304 Not Found: /favicon.ico
+WARNING 2025-09-17 20:51:53,593 log 14768 3304 Method Not Allowed: /accounts/register/
+WARNING 2025-09-17 20:51:57,776 log 14768 3304 Method Not Allowed: /accounts/login/
+INFO 2025-09-17 20:53:10,292 autoreload 14768 16344 D:\Projects\Placement_partner\Placement_Partner\accounts\urls.py changed, reloading.
+INFO 2025-09-17 20:53:11,518 autoreload 8016 14884 Watching for file changes with StatReloader
+WARNING 2025-09-17 20:53:18,177 log 8016 15756 Not Found: /favicon.ico
+ERROR 2025-09-17 20:53:20,438 log 8016 15756 Internal Server Error: /accounts/login/
+Traceback (most recent call last):
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\backends\django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\base.py", line 171, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\loader_tags.py", line 134, in render
+    compiled_parent = self.get_parent(context)
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\loader_tags.py", line 131, in get_parent
+    return self.find_template(parent, context)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\loader_tags.py", line 109, in find_template
+    template, origin = context.template.engine.find_template(
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        template_name,
+        ^^^^^^^^^^^^^^
+        skip=history,
+        ^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\engine.py", line 163, in find_template
+    raise TemplateDoesNotExist(name, tried=tried)
+django.template.exceptions.TemplateDoesNotExist: base.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\views\generic\base.py", line 144, in dispatch
+    return handler(request, *args, **kwargs)
+  File "D:\Projects\Placement_partner\Placement_Partner\accounts\views.py", line 62, in get
+    return render(request, "accounts/login.html", {"form": form})
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\backends\django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "D:\Projects\Placement_partner\venv\Lib\site-packages\django\template\backends\django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: base.html
+WARNING 2025-09-17 20:54:03,563 log 8016 17460 Not Found: /favicon.ico
+WARNING 2025-09-17 21:36:42,178 log 8016 2044 Not Found: /favicon.ico
+WARNING 2025-09-17 21:50:51,165 log 8016 7052 Not Found: /favicon.ico
+WARNING 2025-09-17 21:51:48,025 log 8016 7052 Not Found: /favicon.ico
+WARNING 2025-09-17 22:07:03,230 log 8016 17336 Not Found: /favicon.ico
+WARNING 2025-09-17 22:13:11,338 log 8016 2976 Not Found: /favicon.ico
+WARNING 2025-09-17 22:13:41,298 log 8016 12380 Not Found: /favicon.ico
+WARNING 2025-09-17 22:14:34,888 log 8016 2976 Not Found: /favicon.ico
+WARNING 2025-09-17 22:17:10,888 log 8016 12380 Not Found: /favicon.ico
+WARNING 2025-09-17 22:19:57,592 log 8016 2976 Not Found: /favicon.ico
+WARNING 2025-09-17 22:20:42,641 log 8016 12380 Not Found: /favicon.ico
+INFO 2025-09-17 22:20:48,339 autoreload 10468 11596 Watching for file changes with StatReloader
+WARNING 2025-09-17 22:23:14,488 log 10468 17056 Not Found: /favicon.ico
+INFO 2025-09-17 22:25:43,532 autoreload 10468 11596 D:\Projects\Placement_partner\Placement_Partner\placement_partner\settings.py changed, reloading.
+INFO 2025-09-17 22:25:44,439 autoreload 12556 10880 Watching for file changes with StatReloader
+INFO 2025-09-17 22:25:49,877 autoreload 12556 10880 D:\Projects\Placement_partner\Placement_Partner\placement_partner\settings.py changed, reloading.
+INFO 2025-09-17 22:27:26,720 autoreload 10288 16272 Watching for file changes with StatReloader
+WARNING 2025-09-17 22:27:36,167 log 10288 16780 Not Found: /favicon.ico
+WARNING 2025-09-17 22:35:34,785 log 10288 16780 Not Found: /favicon.ico

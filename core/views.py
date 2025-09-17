@@ -1,4 +1,4 @@
-from rest_framework import status, viewsets, generics
+from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -12,11 +12,10 @@ import os
 import json
 import logging
 import tempfile
-
-from .models import Resume, JobDescription, CoverLetter, OfferLetter, SkillGapReport, UserProfile
+from .models import Resume, JobDescription, CoverLetter, OfferLetter, SkillGapReport
 from .serializers import (
     ResumeSerializer, JobDescriptionSerializer, CoverLetterSerializer,
-    OfferLetterSerializer, SkillGapReportSerializer, UserProfileSerializer,
+    OfferLetterSerializer, SkillGapReportSerializer,
     ResumeUploadSerializer, JobMatchSerializer, CoverLetterGenerateSerializer,
     OfferLetterAnalyzeSerializer, ATSOptimizeSerializer
 )
@@ -39,7 +38,7 @@ class ResumeViewSet(viewsets.ModelViewSet):
         """Upload and parse resume"""
         serializer = ResumeUploadSerializer(data=request.data)
         if serializer.is_valid():
-            resume = serializer.save()
+            resume = serializer.save(user=request.user)
             
             # Parse the uploaded file if provided
             if resume.file:
@@ -89,10 +88,16 @@ class ResumeViewSet(viewsets.ModelViewSet):
                 'original_text': resume.parsed_text
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class JobDescriptionViewSet(viewsets.ModelViewSet):
     queryset = JobDescription.objects.all()
     serializer_class = JobDescriptionSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class CoverLetterViewSet(viewsets.ModelViewSet):
     queryset = CoverLetter.objects.all()
@@ -134,7 +139,7 @@ class OfferLetterViewSet(viewsets.ModelViewSet):
         """Analyze offer letter"""
         serializer = OfferLetterAnalyzeSerializer(data=request.data)
         if serializer.is_valid():
-            offer_letter = serializer.save()
+            offer_letter = serializer.save(user=request.user)
             
             # Extract text from file or use provided text
             offer_text = offer_letter.text or ""
@@ -211,34 +216,6 @@ class SkillGapReportViewSet(viewsets.ModelViewSet):
         
         return Response({'error': 'resume_id and job_description_id are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-class UserProfileViewSet(viewsets.ModelViewSet):
-    queryset = UserProfile.objects.all()
-    serializer_class = UserProfileSerializer
-
-    @action(detail=False, methods=['get'])
-    def profile(self, request):
-        """Get user profile and readiness score"""
-        user_id = request.query_params.get('user_id')
-        
-        if user_id:
-            try:
-                user_profile = UserProfile.objects.get(user_id=user_id)
-                # Calculate readiness score
-                readiness_score = calculate_user_readiness_score(user_profile)
-                user_profile.readiness_score = readiness_score
-                user_profile.save()
-                
-                return Response({
-                    'user': user_profile.user.username,
-                    'readiness_score': readiness_score,
-                    'total_applications': user_profile.total_applications,
-                    'interviews_attended': user_profile.interviews_attended,
-                    'offers_received': user_profile.offers_received
-                })
-            except UserProfile.DoesNotExist:
-                return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
-        
-        return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
 # Additional API views
 @api_view(['GET'])

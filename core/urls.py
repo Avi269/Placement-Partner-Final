@@ -9,7 +9,6 @@ router.register(r'job-description', views.JobDescriptionViewSet, basename='job-d
 router.register(r'cover-letter', views.CoverLetterViewSet, basename='cover-letter')
 router.register(r'offer-letter', views.OfferLetterViewSet, basename='offer-letter')
 router.register(r'skill-gap-report', views.SkillGapReportViewSet, basename='skill-gap-report')
-router.register(r'user-profile', views.UserProfileViewSet, basename='user-profile')
 
 # URL patterns
 urlpatterns = [
@@ -35,5 +34,4 @@ urlpatterns = [
     path('api/job/match/', views.SkillGapReportViewSet.as_view({'post': 'match'}), name='job-match'),
     path('api/skills/gaps/', views.SkillGapReportViewSet.as_view({'get': 'gaps'}), name='skills-gaps'),
     path('api/offer/explain/', views.OfferLetterViewSet.as_view({'post': 'explain'}), name='offer-explain'),
-    path('api/user/profile/', views.UserProfileViewSet.as_view({'get': 'profile'}), name='user-profile'),
 ] 

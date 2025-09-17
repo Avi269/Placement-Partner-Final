@@ -1,11 +1,6 @@
 from rest_framework import serializers
-from .models import Resume, JobDescription, CoverLetter, OfferLetter, SkillGapReport, UserProfile
-from django.contrib.auth.models import User
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+from .models import Resume, JobDescription, CoverLetter, OfferLetter, SkillGapReport
+from accounts.serializers import UserSerializer
 
 class ResumeSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -46,13 +41,6 @@ class SkillGapReportSerializer(serializers.ModelSerializer):
         model = SkillGapReport
         fields = '__all__'
         read_only_fields = ['fit_score', 'missing_skills', 'matching_skills', 'suggested_resources']
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = UserProfile
-        fields = '__all__'
 
 # Special serializers for specific API endpoints
 class ResumeUploadSerializer(serializers.ModelSerializer):

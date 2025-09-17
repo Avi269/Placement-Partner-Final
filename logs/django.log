@@ -478,3 +478,91 @@ INFO 2025-09-17 22:25:49,877 autoreload 12556 10880 D:\Projects\Placement_partne
 INFO 2025-09-17 22:27:26,720 autoreload 10288 16272 Watching for file changes with StatReloader
 WARNING 2025-09-17 22:27:36,167 log 10288 16780 Not Found: /favicon.ico
 WARNING 2025-09-17 22:35:34,785 log 10288 16780 Not Found: /favicon.ico
+INFO 2025-09-17 23:28:02,864 autoreload 2728 11108 Watching for file changes with StatReloader
+WARNING 2025-09-17 23:29:07,332 log 2728 15500 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:30:41,319 log 2728 15500 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:30:53,240 log 2728 15500 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:31:07,738 log 2728 15500 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-09-17 23:35:36,247 autoreload 16672 12336 Watching for file changes with StatReloader
+WARNING 2025-09-17 23:37:50,664 log 16672 7596 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-09-17 23:46:34,504 autoreload 15680 17072 Watching for file changes with StatReloader
+INFO 2025-09-17 23:47:25,261 autoreload 15680 17072 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:47:28,002 autoreload 13732 2312 Watching for file changes with StatReloader
+INFO 2025-09-17 23:47:29,596 autoreload 13732 2312 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:47:30,064 autoreload 8132 17844 Watching for file changes with StatReloader
+INFO 2025-09-17 23:48:44,760 autoreload 4980 3136 Watching for file changes with StatReloader
+INFO 2025-09-17 23:49:21,066 autoreload 4980 3136 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:49:23,831 autoreload 9324 16252 Watching for file changes with StatReloader
+INFO 2025-09-17 23:51:28,064 autoreload 9324 16252 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:51:28,810 autoreload 18876 17900 Watching for file changes with StatReloader
+WARNING 2025-09-17 23:52:40,498 log 18876 18844 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:52:48,281 log 18876 4620 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:53:04,766 log 18876 4620 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:53:07,577 log 18876 4620 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:53:08,331 log 18876 14156 Not Found: /favicon.ico
+WARNING 2025-09-17 23:53:24,834 log 18876 14156 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:53:28,031 log 18876 14156 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:53:30,408 log 18876 14156 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:53:36,949 log 18876 14156 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-09-17 23:55:31,710 autoreload 18876 17900 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:55:34,470 autoreload 9520 17476 Watching for file changes with StatReloader
+INFO 2025-09-17 23:55:39,643 autoreload 9520 17476 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:55:40,388 autoreload 4688 15048 Watching for file changes with StatReloader
+INFO 2025-09-17 23:56:23,742 autoreload 4688 15048 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:56:24,446 autoreload 18664 8076 Watching for file changes with StatReloader
+INFO 2025-09-17 23:56:30,589 autoreload 18664 8076 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:56:31,317 autoreload 18660 2164 Watching for file changes with StatReloader
+INFO 2025-09-17 23:56:35,455 autoreload 18660 2164 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:56:36,204 autoreload 15488 9452 Watching for file changes with StatReloader
+INFO 2025-09-17 23:59:39,727 autoreload 15488 9452 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-17 23:59:40,926 autoreload 11060 11708 Watching for file changes with StatReloader
+WARNING 2025-09-17 23:59:46,945 log 11060 15812 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-17 23:59:48,035 log 11060 18888 Not Found: /favicon.ico
+WARNING 2025-09-18 00:00:15,809 log 11060 18888 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:02:06,788 log 11060 18888 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:02:14,003 log 11060 18888 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:02:14,563 log 11060 18932 Not Found: /favicon.ico
+INFO 2025-09-18 00:06:36,788 autoreload 11060 11708 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:06:39,686 autoreload 16416 12620 Watching for file changes with StatReloader
+INFO 2025-09-18 00:06:41,228 autoreload 16416 12620 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:06:41,683 autoreload 15940 17328 Watching for file changes with StatReloader
+INFO 2025-09-18 00:10:52,156 autoreload 15940 17328 D:\Projects\Placement_partner\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-18 00:10:52,935 autoreload 4952 3320 Watching for file changes with StatReloader
+WARNING 2025-09-18 00:13:28,761 log 4952 18952 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:13:29,275 log 4952 18492 Not Found: /favicon.ico
+WARNING 2025-09-18 00:13:58,746 log 4952 18492 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-09-18 00:19:59,838 autoreload 4952 3320 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:20:02,587 autoreload 408 17648 Watching for file changes with StatReloader
+INFO 2025-09-18 00:20:09,877 autoreload 408 17648 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:20:10,615 autoreload 14368 18960 Watching for file changes with StatReloader
+INFO 2025-09-18 00:21:31,127 autoreload 14368 18960 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:21:31,879 autoreload 12440 4060 Watching for file changes with StatReloader
+INFO 2025-09-18 00:21:34,565 autoreload 12440 4060 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:21:35,003 autoreload 18904 3552 Watching for file changes with StatReloader
+INFO 2025-09-18 00:21:40,286 autoreload 18904 3552 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:21:41,084 autoreload 2900 17264 Watching for file changes with StatReloader
+INFO 2025-09-18 00:21:49,782 autoreload 2900 17264 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:21:50,221 autoreload 5456 16228 Watching for file changes with StatReloader
+INFO 2025-09-18 00:21:51,799 autoreload 5456 16228 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:21:52,320 autoreload 7324 10364 Watching for file changes with StatReloader
+WARNING 2025-09-18 00:22:29,602 log 7324 17904 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:22:31,807 log 7324 17904 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:22:32,373 log 7324 17460 Not Found: /favicon.ico
+WARNING 2025-09-18 00:22:54,604 log 7324 17460 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-09-18 00:24:12,762 autoreload 7324 10364 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:24:15,633 autoreload 18412 8328 Watching for file changes with StatReloader
+WARNING 2025-09-18 00:24:39,947 log 18412 5868 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:24:41,679 log 18412 5868 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:24:42,185 log 18412 8872 Not Found: /favicon.ico
+WARNING 2025-09-18 00:24:58,011 log 18412 8872 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-09-18 00:27:37,398 autoreload 18412 8328 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:27:40,466 autoreload 13332 18956 Watching for file changes with StatReloader
+INFO 2025-09-18 00:28:34,514 autoreload 13332 18956 D:\Projects\Placement_partner\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-09-18 00:28:35,334 autoreload 5024 8936 Watching for file changes with StatReloader
+WARNING 2025-09-18 00:28:49,364 log 5024 5852 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:28:51,194 log 5024 5852 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:28:51,719 log 5024 4812 Not Found: /favicon.ico
+WARNING 2025-09-18 00:29:08,033 log 5024 4812 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:29:29,764 log 5024 4812 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:29:36,674 log 5024 4812 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-09-18 00:30:20,165 log 5024 4812 Not Found: /.well-known/appspecific/com.chrome.devtools.json

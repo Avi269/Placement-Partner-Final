@@ -17,7 +17,6 @@ if not API_KEY:
     raise ImproperlyConfigured(
         "Missing Gemini API key—please set GEMINI_API_KEY (or GOOGLE_API_KEY) in your environment."
     )
-
 # Configure Gemini client
 try:
     genai.configure(api_key=API_KEY)
@@ -284,32 +283,31 @@ def parse_resume_file(file_path):
     text = extract_text_from_file(file_path)
 
     prompt = f"""
-You are an AI resume parser. Extract the following fields from the resume:
-- name
-- email
-- phone
-- education (as a list of strings)
-- experience (as a list of strings)
-- skills (as a list of short strings, only technical or job-relevant skills)
-- parsed_text (raw cleaned text)
+    You are an AI resume parser. Extract the following fields from the resume:
+    - name
+    - email
+    - phone
+    - education (as a list of strings)
+    - experience (as a list of strings)
+    - skills (as a list of short strings, only technical or job-relevant skills)
+    - parsed_text (raw cleaned text)
 
-Return the response as valid JSON like this:
-{{
-  "name": "...",
-  "email": "...",
-  "phone": "...",
-  "education": ["..."],
-  "experience": ["..."],
-  "skills": ["..."],
-  "parsed_text": "..."
-}}
+    Return the response as valid JSON like this:
+    {{
+      "name": "...",
+      "email": "...",
+      "phone": "...",
+      "education": ["..."],
+      "experience": ["..."],
+      "skills": ["..."],
+      "parsed_text": "..."
+    }}
 
-Resume:
-{text}
+    Resume:
+    {text}
     """
 
     try:
-        # Get Gemini response (already working in your code)
         response = generate_with_retry(
             prompt,
             generation_config=genai.types.GenerationConfig(
@@ -318,17 +316,66 @@ Resume:
             )
         ).text.strip()
 
-        # ✅ Strip triple-backtick wrappers if present
-        # This handles: ```json\n{...}\n```
+        # ✅ Remove code fences if present
         match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", response)
         cleaned = match.group(1) if match else response
 
-        return json.loads(cleaned)
+        try:
+            parsed = json.loads(cleaned) if cleaned else {}
+        except json.JSONDecodeError:
+            # ✅ Attempt to repair invalid JSON
+            repaired = cleaned.strip()
+            repaired = repaired.replace("\n", " ").replace("\r", " ")
+            repaired = re.sub(r",\s*([}\]])", r"\1", repaired)
+            try:
+                parsed = json.loads(repaired)
+            except Exception:
+                parsed = {}
 
-    except json.JSONDecodeError as e:
-        raise ValidationError(f"Gemini responded with invalid JSON: {response}")
+        # ✅ Always enrich + fill missing defaults
+        parsed = parsed or {}
+        parsed = enrich_parsed_resume(parsed)
+
+        # ✅ Guarantee parsed_text always exists
+        if "parsed_text" not in parsed or not parsed["parsed_text"]:
+            parsed["parsed_text"] = text[:2000]
+
+        return parsed
+
     except Exception as e:
         raise ValidationError(f"Error parsing resume with Gemini: {str(e)}")
+    
+    
+def enrich_parsed_resume(data: dict) -> dict:
+    text = data.get("parsed_text", "")
+
+    # Extract email
+    if not data.get("email"):
+        match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
+        data["email"] = match.group(0) if match else None
+
+    # Extract phone
+    if not data.get("phone"):
+        match = re.search(r"\+?\d{10,15}", text)
+        data["phone"] = match.group(0) if match else None
+
+    # Extract name (first line assumption)
+    if not data.get("name"):
+        first_line = text.splitlines()[0].strip()
+        if first_line and "@" not in first_line and not first_line.startswith("+"):
+            data["name"] = first_line
+
+    # Extract education (basic scan for degrees)
+    if not data.get("education"):
+        edu_matches = re.findall(r"(Bachelor|Master|B\.?Tech|MCA|BCA|BSc|MSc).*", text, re.I)
+        data["education"] = list(set([e.strip() for e in edu_matches]))
+
+    # Extract skills (scan common keywords)
+    if not data.get("skills"):
+        skills = extract_skills_from_text(text)
+        data["skills"] = skills
+
+    return data
 
 
 def extract_skills_from_text(text: str) -> List[str]:

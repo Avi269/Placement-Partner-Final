@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-import os
+import tempfile, os
 import json
 import logging
 import tempfile
@@ -43,7 +43,12 @@ class ResumeViewSet(viewsets.ModelViewSet):
             # Parse the uploaded file if provided
             if resume.file:
                 file_path = resume.file.path
-                parsed_data = parse_resume_file(file_path)
+                try:
+                    parsed_data = parse_resume_file(file_path)
+                    logging.info(f"Parsed resume data: {parsed_data}")
+                except Exception as e:
+                    logging.exception("Resume parsing failed")
+                    return Response({"error": f"Resume parsing failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
                 # Update resume with parsed data
                 resume.parsed_text = parsed_data.get('parsed_text', '')
@@ -59,6 +64,11 @@ class ResumeViewSet(viewsets.ModelViewSet):
                     resume.extracted_skills = extract_skills_from_text(resume.parsed_text)
                 
                 resume.save()
+
+                # ✅ Save resume in session if user is not logged in
+                if not request.user.is_authenticated:
+                    request.session["resume_id"] = resume.id
+
             elif resume.parsed_text and not resume.extracted_skills:
                 # Extract skills from provided text
                 resume.extracted_skills = extract_skills_from_text(resume.parsed_text)
@@ -260,6 +270,22 @@ def resume_upload_view(request):
             # Delete temp file
             os.remove(temp_file_path)
 
+            # Save resume in DB
+            resume = Resume.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                name=parsed_data.get("name", ""),
+                email=parsed_data.get("email", ""),
+                phone=parsed_data.get("phone", ""),
+                parsed_text=parsed_data.get("parsed_text", ""),
+                extracted_skills=parsed_data.get("skills", []),
+                education=parsed_data.get("education", []),
+                experience=parsed_data.get("experience", [])
+            )
+
+            # Save resume ID in session for anonymous users
+            if not request.user.is_authenticated:
+                request.session["resume_id"] = resume.id
+
             return JsonResponse({
                 "success": True,
                 "data": parsed_data
@@ -285,8 +311,14 @@ def job_matching_view(request):
             data = request.POST
             jd_text = data.get("description", "")
 
-            # TODO: Fetch skills from session or temp Resume (for now hardcoded or fetched by latest)
-            resume = Resume.objects.last()
+            # ✅ Get resume depending on auth
+            resume = None
+            if request.user.is_authenticated:
+                resume = Resume.objects.filter(user=request.user).last()
+            else:
+                resume_id = request.session.get("resume_id")
+                resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
+
             if not resume:
                 return JsonResponse({"success": False, "message": "No resume found"})
 

@@ -566,3 +566,201 @@ WARNING 2025-09-18 00:29:08,033 log 5024 4812 Not Found: /.well-known/appspecifi
 WARNING 2025-09-18 00:29:29,764 log 5024 4812 Not Found: /.well-known/appspecific/com.chrome.devtools.json
 WARNING 2025-09-18 00:29:36,674 log 5024 4812 Not Found: /.well-known/appspecific/com.chrome.devtools.json
 WARNING 2025-09-18 00:30:20,165 log 5024 4812 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-09-18 00:37:02,218 autoreload 24460 2748 Watching for file changes with StatReloader
+INFO 2025-09-18 00:37:31,570 autoreload 15136 18824 Watching for file changes with StatReloader
+WARNING 2025-09-18 00:38:41,505 log 15136 23704 Not Found: /favicon.ico
+INFO 2025-09-18 00:43:14,433 autoreload 23316 9016 Watching for file changes with StatReloader
+INFO 2025-09-18 00:53:08,814 autoreload 23316 9016 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-18 00:53:11,760 autoreload 24172 18672 Watching for file changes with StatReloader
+WARNING 2025-09-18 00:53:41,267 log 24172 13472 Not Found: /favicon.ico
+INFO 2025-09-18 01:03:45,552 autoreload 24172 18672 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-18 01:03:48,532 autoreload 22364 2080 Watching for file changes with StatReloader
+INFO 2025-09-18 01:04:42,292 autoreload 22364 2080 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-09-18 01:04:43,411 autoreload 15024 2044 Watching for file changes with StatReloader
+INFO 2025-09-18 01:17:45,526 autoreload 13268 2104 Watching for file changes with StatReloader
+INFO 2025-09-18 08:51:14,369 autoreload 18928 22408 Watching for file changes with StatReloader
+WARNING 2025-09-18 08:53:42,823 log 18928 22328 Not Found: /job-matching/undefined
+INFO 2025-09-18 09:02:57,467 autoreload 3696 3720 Watching for file changes with StatReloader
+INFO 2025-09-18 09:28:45,276 autoreload 19772 19776 Watching for file changes with StatReloader
+INFO 2025-09-18 10:09:38,979 autoreload 20060 6064 Watching for file changes with StatReloader
+INFO 2025-09-18 10:33:18,505 autoreload 9896 20552 Watching for file changes with StatReloader
+INFO 2025-09-18 10:39:46,785 autoreload 7012 5076 Watching for file changes with StatReloader
+INFO 2025-11-10 20:33:47,588 autoreload 5484 22344 Watching for file changes with StatReloader
+INFO 2025-11-11 19:04:16,683 autoreload 2964 11816 Watching for file changes with StatReloader
+INFO 2025-11-11 19:06:21,301 autoreload 2964 11816 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:06:25,048 autoreload 6752 3344 Watching for file changes with StatReloader
+INFO 2025-11-11 19:06:43,356 autoreload 6752 3344 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:06:45,305 autoreload 23400 24972 Watching for file changes with StatReloader
+INFO 2025-11-11 19:07:42,358 autoreload 23400 24972 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:07:44,238 autoreload 24712 25092 Watching for file changes with StatReloader
+INFO 2025-11-11 19:08:07,584 autoreload 24712 25092 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:08:09,465 autoreload 10792 24072 Watching for file changes with StatReloader
+INFO 2025-11-11 19:08:29,520 autoreload 10792 24072 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:08:31,378 autoreload 10256 17412 Watching for file changes with StatReloader
+WARNING 2025-11-11 19:30:53,098 log 10256 16076 Not Found: /favicon.ico
+ERROR 2025-11-11 19:31:17,753 views 10256 7976 Offer analysis error
+Traceback (most recent call last):
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py", line 182, in analyze_offer_letter_with_gemini
+    response = generate_with_retry(
+        prompt,
+    ...<3 lines>...
+        )
+    )
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py", line 125, in generate_with_retry
+    response = model.generate_content(prompt, **kwargs)
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\generativeai\generative_models.py", line 331, in generate_content
+    response = self._client.generate_content(
+        request,
+        **request_options,
+    )
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.NotFound: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py", line 421, in offer_analysis_view
+    analysis = analyze_offer_letter_with_gemini(offer_text)
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py", line 213, in analyze_offer_letter_with_gemini
+    raise ValidationError(f"Failed to analyze offer letter: {str(e)}")
+django.core.exceptions.ValidationError: ['Failed to analyze offer letter: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.']
+INFO 2025-11-11 19:33:15,929 autoreload 10256 17412 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:33:19,726 autoreload 13636 13632 Watching for file changes with StatReloader
+INFO 2025-11-11 19:35:03,745 autoreload 13636 13632 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:35:05,316 autoreload 24428 12844 Watching for file changes with StatReloader
+INFO 2025-11-11 19:35:17,335 autoreload 24428 12844 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:35:18,908 autoreload 20056 1792 Watching for file changes with StatReloader
+INFO 2025-11-11 19:35:36,443 autoreload 20056 1792 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-11-11 19:35:37,615 autoreload 6640 17136 Watching for file changes with StatReloader
+INFO 2025-11-11 19:35:45,934 autoreload 6640 17136 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-11-11 19:35:47,491 autoreload 25244 2564 Watching for file changes with StatReloader
+ERROR 2025-11-11 19:40:03,073 views 25244 20832 Error parsing resume: ['Error parsing resume with Gemini: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.']
+INFO 2025-11-11 19:42:53,076 autoreload 25244 2564 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:42:56,709 autoreload 8316 17296 Watching for file changes with StatReloader
+INFO 2025-11-11 19:45:40,293 autoreload 21368 23624 Watching for file changes with StatReloader
+INFO 2025-11-11 19:49:25,918 autoreload 21368 23624 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:49:29,937 autoreload 19916 7348 Watching for file changes with StatReloader
+INFO 2025-11-11 19:49:39,401 autoreload 19916 7348 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 19:49:40,860 autoreload 25468 15412 Watching for file changes with StatReloader
+INFO 2025-11-11 20:32:30,688 autoreload 18592 11724 Watching for file changes with StatReloader
+WARNING 2025-11-11 20:34:50,023 log 18592 22204 Not Found: /favicon.ico
+INFO 2025-11-11 20:36:36,307 autoreload 18592 11724 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\model_backends.py changed, reloading.
+INFO 2025-11-11 20:36:37,903 autoreload 9064 12080 Watching for file changes with StatReloader
+INFO 2025-11-11 20:37:02,851 autoreload 9064 12080 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-11-11 20:37:04,024 autoreload 15980 25328 Watching for file changes with StatReloader
+INFO 2025-11-11 20:37:17,023 autoreload 15980 25328 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-11-11 20:37:18,189 autoreload 6288 17732 Watching for file changes with StatReloader
+INFO 2025-11-11 20:39:41,688 autoreload 21152 14972 Watching for file changes with StatReloader
+INFO 2025-11-11 20:41:08,368 autoreload 1272 24368 Watching for file changes with StatReloader
+INFO 2025-11-11 20:46:00,825 autoreload 21152 14972 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-11-11 20:46:03,843 autoreload 12800 23376 Watching for file changes with StatReloader
+INFO 2025-11-11 20:46:25,861 autoreload 12800 23376 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-11-11 20:46:26,948 autoreload 10280 12084 Watching for file changes with StatReloader
+INFO 2025-11-11 20:51:10,852 autoreload 10280 12084 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 20:51:14,192 autoreload 19200 7048 Watching for file changes with StatReloader
+INFO 2025-11-11 20:51:25,539 autoreload 19200 7048 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py changed, reloading.
+INFO 2025-11-11 20:51:27,080 autoreload 25356 22484 Watching for file changes with StatReloader
+INFO 2025-11-11 20:51:49,922 autoreload 25356 22484 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-11 20:51:50,900 autoreload 20400 12384 Watching for file changes with StatReloader
+WARNING 2025-11-11 20:54:40,925 log 20400 11252 Not Found: /favicon.ico
+INFO 2025-11-11 20:55:04,553 job_search 20400 5932 Found 4 jobs from Remotive
+INFO 2025-11-11 20:55:05,962 job_search 20400 5932 Found 0 jobs from Arbeitnow
+INFO 2025-11-11 20:55:05,964 job_search 20400 5932 Total unique jobs found: 4
+WARNING 2025-11-11 20:55:06,996 log 20400 11252 Not Found: /resume/"https://s3.amazonaws.com/files.freshteam.com/production/116689/attachment...</p>                                                                                                    </div>                                                <span class=
+INFO 2025-11-11 21:00:55,817 job_search 20400 19232 Found 4 jobs from Remotive
+INFO 2025-11-11 21:00:57,309 job_search 20400 19232 Found 0 jobs from Arbeitnow
+INFO 2025-11-11 21:00:57,311 job_search 20400 19232 Total unique jobs found: 4
+WARNING 2025-11-11 21:00:58,373 log 20400 19232 Not Found: /resume/"https://s3.amazonaws.com/files.freshteam.com/production/116689/attachment...</p>                                                                                                    </div>                                                <span class=
+INFO 2025-11-11 21:02:09,412 views 20400 19232 Job matching request received. JD text length: 2167
+INFO 2025-11-11 21:02:09,415 views 20400 19232 Anonymous user. Session resume_id: 19
+INFO 2025-11-11 21:02:09,417 views 20400 19232 Resume skills: ['15+ high-risk areas', '91%', 'a challenging environment', 'a web app', 'ahasan habib parvej', 'ai', 'ai-powered resume', 'an organization', 'an overall accuracy', 'ats-friendly content generation', 'aug', 'bootstrap', 'classification models', 'code', 'computer applications', 'continuous learning', 'crime data analysis', 'css', 'django', 'django rest framework']
+INFO 2025-11-11 21:02:12,113 views 20400 19232 Job matching complete. Fit score: 55.0
+WARNING 2025-11-11 21:02:27,321 log 20400 19232 Not Found: /job-matching/undefined
+WARNING 2025-11-11 21:02:27,373 log 20400 19232 Not Found: /favicon.ico
+WARNING 2025-11-11 21:05:40,415 log 20400 20152 Not Found: /favicon.ico
+WARNING 2025-11-11 21:06:09,912 log 20400 20124 Not Found: /favicon.ico
+INFO 2025-11-11 21:55:51,161 job_search 20400 7428 Found 4 jobs from Remotive
+INFO 2025-11-11 21:55:52,020 job_search 20400 7428 Found 0 jobs from Arbeitnow
+INFO 2025-11-11 21:55:52,022 job_search 20400 7428 Total unique jobs found: 4
+WARNING 2025-11-11 21:55:53,063 log 20400 7428 Not Found: /resume/"https://s3.amazonaws.com/files.freshteam.com/production/116689/attachment...</p>                                                                                                    </div>                                                <span class=
+INFO 2025-11-11 23:18:33,762 job_search 20400 27044 Found 4 jobs from Remotive
+INFO 2025-11-11 23:18:35,380 job_search 20400 27044 Found 0 jobs from Arbeitnow
+INFO 2025-11-11 23:18:35,382 job_search 20400 27044 Total unique jobs found: 4
+WARNING 2025-11-11 23:18:36,427 log 20400 27044 Not Found: /resume/"https://s3.amazonaws.com/files.freshteam.com/production/116689/attachment...</p>                                                                                                    </div>                                                <span class=
+INFO 2025-11-11 23:20:56,827 job_search 20400 27352 Found 4 jobs from Remotive
+INFO 2025-11-11 23:20:58,037 job_search 20400 27352 Found 0 jobs from Arbeitnow
+INFO 2025-11-11 23:20:58,040 job_search 20400 27352 Total unique jobs found: 4
+WARNING 2025-11-11 23:20:59,084 log 20400 27352 Not Found: /resume/"https://s3.amazonaws.com/files.freshteam.com/production/116689/attachment...</p>                                                                                                    </div>                                                <span class=
+INFO 2025-11-11 23:31:22,083 views 20400 17568 Job matching request received. JD text length: 2596
+INFO 2025-11-11 23:31:22,086 views 20400 17568 Anonymous user. Session resume_id: 22
+INFO 2025-11-11 23:31:22,087 views 20400 17568 Resume skills: ['15+ high-risk areas', '91%', 'a challenging environment', 'a web app', 'ahasan habib parvej', 'ai', 'ai-powered resume', 'an organization', 'an overall accuracy', 'ats-friendly content generation', 'aug', 'bootstrap', 'classification models', 'code', 'computer applications', 'continuous learning', 'crime data analysis', 'css', 'django', 'django rest framework']
+INFO 2025-11-11 23:31:29,481 views 20400 17568 Job matching complete. Fit score: 50.0
+ERROR 2025-11-11 23:36:39,976 views 20400 14956 Offer analysis error
+Traceback (most recent call last):
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py", line 588, in offer_analysis_view
+    offer_text = extract_text_from_file(temp_path)
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py", line 330, in extract_text_from_file
+    raise ValidationError(f"Unsupported file type: {ext}")
+django.core.exceptions.ValidationError: ['Unsupported file type: txt']
+INFO 2025-11-11 23:39:07,474 job_search 20400 14956 Found 0 jobs from Remotive
+INFO 2025-11-11 23:39:08,298 job_search 20400 14956 Found 0 jobs from Arbeitnow
+INFO 2025-11-11 23:39:08,301 job_search 20400 14956 Total unique jobs found: 0
+INFO 2025-11-12 01:00:31,266 autoreload 24852 5204 Watching for file changes with StatReloader
+INFO 2025-11-12 01:04:33,621 autoreload 12024 4460 Watching for file changes with StatReloader
+INFO 2025-11-12 01:08:01,688 autoreload 24852 5204 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-12 01:08:04,845 autoreload 240 2728 Watching for file changes with StatReloader
+INFO 2025-11-12 01:08:27,107 autoreload 240 2728 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-12 01:08:28,169 autoreload 27332 26088 Watching for file changes with StatReloader
+INFO 2025-11-12 01:08:42,028 autoreload 27332 26088 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-12 01:08:43,166 autoreload 8676 16996 Watching for file changes with StatReloader
+INFO 2025-11-12 01:09:43,906 autoreload 25576 30528 Watching for file changes with StatReloader
+ERROR 2025-11-12 01:09:54,351 views 25576 17292 Offer analysis error
+Traceback (most recent call last):
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py", line 588, in offer_analysis_view
+    offer_text = extract_text_from_file(temp_path)
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py", line 402, in extract_text_from_file
+    raise ValidationError(f"Unsupported file type: {ext}")
+django.core.exceptions.ValidationError: ['Unsupported file type: txt']
+ERROR 2025-11-12 01:11:14,478 views 25576 17292 Offer analysis error
+Traceback (most recent call last):
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\views.py", line 588, in offer_analysis_view
+    offer_text = extract_text_from_file(temp_path)
+  File "C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py", line 402, in extract_text_from_file
+    raise ValidationError(f"Unsupported file type: {ext}")
+django.core.exceptions.ValidationError: ['Unsupported file type: txt']
+WARNING 2025-11-12 01:11:19,671 log 25576 5240 Not Found: /favicon.ico
+INFO 2025-11-12 01:11:50,976 autoreload 25576 30528 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-12 01:11:52,053 autoreload 29856 29848 Watching for file changes with StatReloader
+INFO 2025-11-12 01:12:51,298 autoreload 29856 29848 C:\Users\habib\OneDrive\Desktop\PLACEMENT\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-11-12 01:12:54,467 autoreload 15224 29748 Watching for file changes with StatReloader
+INFO 2025-11-12 01:14:09,274 job_search 15224 28236 Found 4 jobs from Remotive
+INFO 2025-11-12 01:14:10,008 job_search 15224 28236 Found 0 jobs from Arbeitnow
+INFO 2025-11-12 01:14:10,010 job_search 15224 28236 Total unique jobs found: 4
+WARNING 2025-11-12 01:14:11,071 log 15224 28236 Not Found: /resume/"https://s3.amazonaws.com/files.freshteam.com/production/116689/attachment...</p>                                                                                                    </div>                                                <span class=

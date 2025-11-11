@@ -134,7 +134,8 @@ def generate_cover_letter_with_gemini(
     
     try:
         prompt = (
-            "You are a professional career assistant. Generate a compelling, tailored cover letter.\n\n"
+            "You are a professional career assistant. Generate a compelling, tailored cover letter.\n"
+            "Return ONLY the cover letter text without any markdown formatting, code blocks, or commentary.\n\n"
             f"Resume excerpt:\n{resume_text[:1000]}\n\n"
             f"Job Description excerpt:\n{jd_text[:1000]}\n\n"
             f"Additional instructions: {custom_prompt[:500]}"
@@ -145,7 +146,50 @@ def generate_cover_letter_with_gemini(
             temperature=0.7,
             max_tokens=512
         )
-        return response.text.strip()
+        
+        response_text = response.text.strip()
+        
+        # Remove markdown code blocks if present
+        if '```' in response_text:
+            lines = response_text.split('\n')
+            cleaned_lines = []
+            in_code_block = False
+            
+            for line in lines:
+                if line.strip().startswith('```'):
+                    in_code_block = not in_code_block
+                    continue
+                if not in_code_block:
+                    cleaned_lines.append(line)
+            
+            response_text = '\n'.join(cleaned_lines).strip()
+        
+        # Remove AI commentary/preamble (common patterns)
+        preamble_patterns = [
+            "Okay, let's",
+            "Here's a",
+            "Here is a",
+            "I've crafted",
+            "I've generated",
+            "Below is",
+            "This is a"
+        ]
+        
+        for pattern in preamble_patterns:
+            if response_text.lower().startswith(pattern.lower()):
+                # Find the first line that looks like letter content
+                lines = response_text.split('\n')
+                for i, line in enumerate(lines):
+                    # Look for typical cover letter start patterns
+                    if (line.strip().startswith('[') or 
+                        'Dear' in line or 
+                        line.strip().startswith('Dear') or
+                        (i > 0 and len(line.strip()) > 20)):
+                        response_text = '\n'.join(lines[i:]).strip()
+                        break
+                break
+        
+        return response_text
     except Exception as e:
         raise ValidationError(f"Failed to generate cover letter: {str(e)}")
 
@@ -154,18 +198,31 @@ def analyze_offer_letter_with_gemini(offer_text: str) -> Dict:
     if not offer_text:
         raise ValidationError("Offer letter text is required.")
     
+    # Define default structure for all required fields
+    default_result = {
+        "ctc": "Not detected",
+        "probation_period": "Not detected",
+        "notice_period": "Not detected",
+        "risk_flags": [],
+        "summary": "Analysis completed.",
+        "compensation_analysis": "Not available.",
+        "terms_analysis": "Not available.",
+        "negotiation_points": [],
+        "questions_to_ask": []
+    }
+    
     try:
         prompt = (
             "You are an HR analyst AI. Carefully analyze this job offer letter and return ONLY valid JSON with the following keys:\n"
-            "- ctc (string)\n"
-            "- probation_period (string)\n"
-            "- notice_period (string)\n"
-            "- risk_flags (list of strings identifying concerning terms, if any)\n"
-            "- summary (string): concise summary of the offer\n"
-            "- compensation_analysis (string): analysis of salary, perks, and fairness\n"
-            "- terms_analysis (string): analysis of working hours, notice, legal issues, etc.\n"
-            "- negotiation_points (list of strings): key terms that could be improved\n"
-            "- questions_to_ask (list of strings): important things the candidate should clarify\n\n"
+            "- ctc (string): The Cost to Company or salary amount\n"
+            "- probation_period (string): Duration of probation period\n"
+            "- notice_period (string): Required notice period\n"
+            "- risk_flags (list of strings): Concerning terms or red flags\n"
+            "- summary (string): 2-3 sentence summary of the offer\n"
+            "- compensation_analysis (string): Analysis of salary, benefits, and market fairness\n"
+            "- terms_analysis (string): Analysis of working conditions, legal terms, etc.\n"
+            "- negotiation_points (list of strings): 3-5 terms that could be negotiated\n"
+            "- questions_to_ask (list of strings): 3-5 important clarification questions\n\n"
             f"Offer Letter:\n{offer_text[:2000]}"
         )
         
@@ -177,24 +234,39 @@ def analyze_offer_letter_with_gemini(offer_text: str) -> Dict:
 
         # Remove ```json code block wrapper if present
         raw = response.text.strip()
-        if raw.startswith("```") and raw.endswith("```"):
+        if raw.startswith("```"):
             lines = raw.splitlines()
-            raw = "\n".join(lines[1:-1]).strip()
+            # Find the start and end of JSON content
+            start_idx = 0
+            end_idx = len(lines)
+            for i, line in enumerate(lines):
+                if line.strip().startswith("```"):
+                    if start_idx == 0:
+                        start_idx = i + 1
+                    else:
+                        end_idx = i
+                        break
+            raw = "\n".join(lines[start_idx:end_idx]).strip()
 
-        return json.loads(raw)
+        result = json.loads(raw)
+        
+        # Merge with defaults to ensure all fields exist
+        for key, default_value in default_result.items():
+            if key not in result or result[key] is None or result[key] == "":
+                result[key] = default_value
+            # Ensure lists are actually lists
+            elif key in ['risk_flags', 'negotiation_points', 'questions_to_ask']:
+                if not isinstance(result[key], list):
+                    result[key] = default_value
+        
+        return result
 
     except json.JSONDecodeError as e:
-        # Fallback default structure if Gemini response fails
+        # Fallback to default structure if JSON parsing fails
         return {
-            "ctc": "Not detected",
-            "probation_period": "Not detected",
-            "notice_period": "Not detected",
+            **default_result,
             "risk_flags": ["Could not analyze offer letter due to format issues."],
-            "summary": "The system was unable to extract structured details from the offer letter.",
-            "compensation_analysis": "Not available.",
-            "terms_analysis": "Not available.",
-            "negotiation_points": [],
-            "questions_to_ask": []
+            "summary": "The system was unable to extract structured details from the offer letter."
         }
 
     except Exception as e:
@@ -289,7 +361,7 @@ def get_learning_resources_with_gemini(missing_skills: List[str]) -> List[Dict]:
     
 
 def extract_text_from_file(file_path: str) -> str:
-    """Extract text from PDF, DOCX, or DOC files. Use OCR for scanned PDFs."""
+    """Extract text from PDF, DOCX, DOC, or TXT files. Use OCR for scanned PDFs."""
     # Handle file path or file object
     if hasattr(file_path, 'path'):
         # Django UploadedFile object
@@ -324,6 +396,14 @@ def extract_text_from_file(file_path: str) -> str:
             text = docx2txt.process(file_path)
             if not text.strip():
                 raise ValidationError("Uploaded DOC/DOCX contains no readable text.")
+            return text
+
+        elif ext == 'txt':
+            # Handle plain text files
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                text = f.read()
+            if not text.strip():
+                raise ValidationError("Uploaded TXT file contains no readable text.")
             return text
 
         else:

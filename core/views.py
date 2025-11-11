@@ -11,7 +11,8 @@ from django.views.decorators.csrf import csrf_exempt
 import tempfile, os
 import json
 import logging
-import tempfile
+import re
+import google.generativeai as genai
 from .models import Resume, JobDescription, CoverLetter, OfferLetter, SkillGapReport
 from .serializers import (
     ResumeSerializer, JobDescriptionSerializer, CoverLetterSerializer,
@@ -254,25 +255,130 @@ def resume_upload_view(request):
 
     elif request.method == 'POST':
         resume_file = request.FILES.get('resume')
-        if not resume_file:
-            return JsonResponse({"success": False, "message": "No file uploaded."})
+        parsed_text = request.POST.get('parsed_text', '').strip()
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        phone = request.POST.get('phone', '').strip()
+
+        # Validate input
+        if not resume_file and not parsed_text:
+            return JsonResponse({
+                "success": False, 
+                "message": "Please upload a resume file or paste resume text."
+            })
 
         try:
-            # Save uploaded file temporarily
-            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(resume_file.name)[-1]) as temp_file:
-                for chunk in resume_file.chunks():
-                    temp_file.write(chunk)
-                temp_file_path = temp_file.name
+            parsed_data = {}
+            
+            if resume_file:
+                # Save uploaded file temporarily
+                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(resume_file.name)[-1]) as temp_file:
+                    for chunk in resume_file.chunks():
+                        temp_file.write(chunk)
+                    temp_file_path = temp_file.name
 
-            # Parse resume
-            parsed_data = parse_resume_file(temp_file_path)
+                try:
+                    # Parse resume from file
+                    parsed_data = parse_resume_file(temp_file_path)
+                except Exception as parse_error:
+                    logging.error(f"Error parsing resume: {parse_error}")
+                    parsed_data = {
+                        "name": name,
+                        "email": email,
+                        "phone": phone,
+                        "parsed_text": "",
+                        "skills": [],
+                        "education": [],
+                        "experience": []
+                    }
+                finally:
+                    # Delete temp file
+                    try:
+                        os.remove(temp_file_path)
+                    except:
+                        pass
+            
+            elif parsed_text:
+                # Parse from text directly
+                try:
+                    # Create a temporary file with the text
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8') as temp_file:
+                        temp_file.write(parsed_text)
+                        temp_file_path = temp_file.name
+                    
+                    # Use Gemini to parse the text
+                    prompt = f"""
+                    You are an AI resume parser. Extract the following fields from the resume:
+                    - name
+                    - email
+                    - phone
+                    - education (as a list of strings)
+                    - experience (as a list of strings)
+                    - skills (as a list of short strings, only technical or job-relevant skills)
+                    - parsed_text (raw cleaned text)
 
-            # Delete temp file
-            os.remove(temp_file_path)
+                    Return the response as valid JSON.
+
+                    Resume:
+                    {parsed_text}
+                    """
+                    
+                    from .utils import generate_with_retry
+                    import re
+                    
+                    response = generate_with_retry(
+                        prompt,
+                        generation_config=genai.types.GenerationConfig(
+                            temperature=0.0,
+                            max_output_tokens=1024,
+                        )
+                    ).text.strip()
+
+                    # Remove code fences if present
+                    match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", response)
+                    cleaned = match.group(1) if match else response
+                    
+                    parsed_data = json.loads(cleaned) if cleaned else {}
+                    
+                    # Clean up temp file
+                    try:
+                        os.remove(temp_file_path)
+                    except:
+                        pass
+                    
+                except Exception as text_parse_error:
+                    logging.error(f"Error parsing text: {text_parse_error}")
+                    parsed_data = {
+                        "name": name,
+                        "email": email,
+                        "phone": phone,
+                        "parsed_text": parsed_text,
+                        "skills": extract_skills_from_text(parsed_text),
+                        "education": [],
+                        "experience": []
+                    }
+
+            # Override with manually provided data if available
+            if name:
+                parsed_data["name"] = name
+            if email:
+                parsed_data["email"] = email
+            if phone:
+                parsed_data["phone"] = phone
+
+            # Ensure all required fields exist
+            parsed_data.setdefault("name", "")
+            parsed_data.setdefault("email", "")
+            parsed_data.setdefault("phone", "")
+            parsed_data.setdefault("parsed_text", parsed_text)
+            parsed_data.setdefault("skills", [])
+            parsed_data.setdefault("education", [])
+            parsed_data.setdefault("experience", [])
 
             # Save resume in DB
             resume = Resume.objects.create(
                 user=request.user if request.user.is_authenticated else None,
+                file=resume_file if resume_file else None,
                 name=parsed_data.get("name", ""),
                 email=parsed_data.get("email", ""),
                 phone=parsed_data.get("phone", ""),
@@ -286,15 +392,54 @@ def resume_upload_view(request):
             if not request.user.is_authenticated:
                 request.session["resume_id"] = resume.id
 
+            # Calculate ATS score
+            from .utils import calculate_ats_score
+            from .job_search import fetch_jobs_for_skills
+            
+            ats_data = {}
+            recommended_jobs = []
+            
+            try:
+                ats_data = calculate_ats_score(
+                    parsed_data.get("parsed_text", ""), 
+                    parsed_data.get("skills", [])
+                )
+            except Exception as e:
+                logging.warning(f"ATS calculation failed: {e}")
+                ats_data = {
+                    "ats_score": 70,
+                    "suggestions": ["Unable to calculate detailed ATS score"]
+                }
+            
+            # Fetch job recommendations based on skills
+            try:
+                if parsed_data.get("skills"):
+                    recommended_jobs = fetch_jobs_for_skills(
+                        parsed_data.get("skills", [])[:5],  # Top 5 skills
+                        max_results=10
+                    )
+            except Exception as e:
+                logging.warning(f"Job fetch failed: {e}")
+
             return JsonResponse({
                 "success": True,
-                "data": parsed_data
+                "data": parsed_data,
+                "resume_id": resume.id,
+                "ats_analysis": ats_data,
+                "recommended_jobs": recommended_jobs
             })
 
-        except Exception as e:
+        except ValidationError as ve:
+            logging.error(f"Validation error: {ve}")
             return JsonResponse({
                 "success": False,
-                "message": "Error processing resume.",
+                "message": str(ve)
+            })
+        except Exception as e:
+            logging.exception("Error processing resume")
+            return JsonResponse({
+                "success": False,
+                "message": "Error processing resume. Please try again or contact support.",
                 "error": str(e)
             })
 
@@ -304,45 +449,78 @@ def resume_upload_view(request):
 @csrf_exempt
 def job_matching_view(request):
     if request.method == 'GET':
-        return render(request, 'core/job_matching.html')  # Load the HTML page on GET
+        # Get resume for display
+        resume = None
+        if request.user.is_authenticated:
+            resume = Resume.objects.filter(user=request.user).last()
+        else:
+            resume_id = request.session.get("resume_id")
+            if resume_id:
+                resume = Resume.objects.filter(id=resume_id).first()
+        
+        context = {
+            'resume': resume,
+            'has_resume': resume is not None
+        }
+        return render(request, 'core/job_matching.html', context)
 
     elif request.method == 'POST':
         try:
             data = request.POST
             jd_text = data.get("description", "")
+            
+            logging.info(f"Job matching request received. JD text length: {len(jd_text)}")
 
             # ✅ Get resume depending on auth
             resume = None
             if request.user.is_authenticated:
                 resume = Resume.objects.filter(user=request.user).last()
+                logging.info(f"Authenticated user. Resume found: {resume is not None}")
             else:
                 resume_id = request.session.get("resume_id")
+                logging.info(f"Anonymous user. Session resume_id: {resume_id}")
                 resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
 
             if not resume:
-                return JsonResponse({"success": False, "message": "No resume found"})
+                logging.warning("No resume found for job matching")
+                return JsonResponse({"success": False, "message": "No resume found. Please upload your resume first."})
 
+            logging.info(f"Resume skills: {resume.extracted_skills}")
+            
+            # Calculate job fit with AI
             fit_score, matching_skills, missing_skills = calculate_job_fit_with_gemini(
                 resume.extracted_skills,
                 jd_text  # ✅ send full JD to Gemini
             )
+            
+            logging.info(f"Job matching complete. Fit score: {fit_score}")
+            
+            # Get learning resources
+            learning_resources = get_learning_resources_with_gemini(missing_skills)
 
             return JsonResponse({
                 "success": True,
                 "fit_score": fit_score,
-                "skills_match": fit_score,  # Optional
+                "skills_match": fit_score,
                 "experience_match": 0,
                 "education_match": 0,
                 "matching_skills": matching_skills,
                 "missing_skills": missing_skills,
+                "resume_data": {
+                    "name": resume.name or "Not provided",
+                    "email": resume.email or "Not provided",
+                    "phone": resume.phone or "Not provided",
+                    "all_skills": resume.extracted_skills or []
+                },
                 "recommendations": {
                     "skills_to_develop": missing_skills,
-                    "learning_resources": get_learning_resources_with_gemini(missing_skills)
+                    "learning_resources": learning_resources
                 }
             })
 
         except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)})
+            logging.exception("Job matching error")
+            return JsonResponse({"success": False, "message": f"Error analyzing job match: {str(e)}"})
 
     else:
         return JsonResponse({"success": False, "message": "Invalid method"})

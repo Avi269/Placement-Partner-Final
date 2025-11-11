@@ -81,31 +81,105 @@
                         </div>
 
                         <div id="parsed-results" class="mt-5 d-none">
-                            <h5 class="mb-3">Resume Analysis Result</h5>
+                            <h5 class="mb-4"><i class="fas fa-check-circle text-success me-2"></i>Resume Analysis Complete!</h5>
 
-                            <div class="mb-3">
-                                <label class="form-label">Extracted Name</label>
-                                <input type="text" id="result-name" class="form-control" readonly>
+                            <!-- ATS Score Card -->
+                            <div class="card mb-4 border-primary" id="ats-score-card">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>ATS Compatibility Score</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <h2 id="ats-overall-score" class="text-primary mb-0">--</h2>
+                                                <small class="text-muted">Overall</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <h2 id="ats-keyword-score" class="mb-0">--</h2>
+                                                <small class="text-muted">Keywords</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <h2 id="ats-format-score" class="mb-0">--</h2>
+                                                <small class="text-muted">Format</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <h2 id="ats-content-score" class="mb-0">--</h2>
+                                                <small class="text-muted">Content</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="text-success"><i class="fas fa-check me-2"></i>Strengths</h6>
+                                            <ul id="ats-strengths" class="list-unstyled"></ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Areas to Improve</h6>
+                                            <ul id="ats-weaknesses" class="list-unstyled"></ul>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <h6><i class="fas fa-lightbulb me-2"></i>Improvement Suggestions</h6>
+                                        <ul id="ats-suggestions" class="list-unstyled"></ul>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Extracted Email</label>
-                                <input type="email" id="result-email" class="form-control" readonly>
+                            <!-- Extracted Data -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Extracted Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Name</label>
+                                        <input type="text" id="result-name" class="form-control" readonly>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold">Email</label>
+                                            <input type="email" id="result-email" class="form-control" readonly>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold">Phone</label>
+                                            <input type="text" id="result-phone" class="form-control" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Extracted Skills (<span id="skill-count">0</span>)</label>
+                                        <div id="result-skills" class="d-flex flex-wrap gap-2"></div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Extracted Phone</label>
-                                <input type="text" id="result-phone" class="form-control" readonly>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Skills</label>
-                                <div id="result-skills" class="d-flex flex-wrap gap-2"></div>
+                            <!-- Recommended Jobs -->
+                            <div class="card mb-4 border-success" id="recommended-jobs-card" style="display:none;">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Recommended Jobs Based on Your Skills</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="jobs-list"></div>
+                                    <div id="no-jobs-message" class="text-center text-muted" style="display:none;">
+                                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                        <p>No jobs found at the moment. Try updating your skills or check back later!</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="text-center mt-4">
-                                <a href="{% url 'job_matching' %}" class="btn btn-success btn-lg">
-                                    <i class="fas fa-briefcase me-2"></i>Match with Job Description
+                                <a href="{% url 'job_matching' %}" class="btn btn-success btn-lg me-2">
+                                    <i class="fas fa-search me-2"></i>Advanced Job Matching
+                                </a>
+                                <a href="{% url 'cover_letter' %}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-envelope me-2"></i>Generate Cover Letter
                                 </a>
                             </div>
                         </div>
@@ -213,6 +287,8 @@
             })
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Response received:', data); // Debug log
+                    
                     clearInterval(interval);
                     progressBar.style.width = '100%';
 
@@ -220,6 +296,10 @@
                         processingModal.hide();
 
                         if (data.success && data.data) {
+                            console.log('Parsed data:', data.data); // Debug log
+                            console.log('ATS analysis:', data.ats_analysis); // Debug log
+                            console.log('Recommended jobs:', data.recommended_jobs); // Debug log
+                            
                             PlacementPartner.showAlert('success', 'Resume uploaded and analyzed successfully!');
 
                             const d = data.data;
@@ -232,17 +312,110 @@
 
                             const skillsEl = document.getElementById('result-skills');
                             skillsEl.innerHTML = '';
-                            (d.skills || []).forEach(skill => {
+                            const skills = d.skills || [];
+                            document.getElementById('skill-count').textContent = skills.length;
+                            skills.forEach(skill => {
                                 const badge = document.createElement('span');
                                 badge.className = 'badge bg-primary me-1 mb-1';
                                 badge.textContent = skill;
                                 skillsEl.appendChild(badge);
                             });
 
+                            // Display ATS Score
+                            if (data.ats_analysis) {
+                                const ats = data.ats_analysis;
+                                document.getElementById('ats-overall-score').textContent = ats.ats_score || '--';
+                                document.getElementById('ats-keyword-score').textContent = ats.keyword_match || '--';
+                                document.getElementById('ats-format-score').textContent = ats.format_score || '--';
+                                document.getElementById('ats-content-score').textContent = ats.content_score || '--';
+
+                                // Set color based on score
+                                const overallEl = document.getElementById('ats-overall-score');
+                                const score = parseInt(ats.ats_score) || 0;
+                                if (score >= 80) {
+                                    overallEl.className = 'text-success mb-0';
+                                } else if (score >= 60) {
+                                    overallEl.className = 'text-warning mb-0';
+                                } else {
+                                    overallEl.className = 'text-danger mb-0';
+                                }
+
+                                // Display strengths
+                                const strengthsEl = document.getElementById('ats-strengths');
+                                strengthsEl.innerHTML = '';
+                                (ats.strengths || []).forEach(strength => {
+                                    const li = document.createElement('li');
+                                    li.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i>${strength}`;
+                                    strengthsEl.appendChild(li);
+                                });
+
+                                // Display weaknesses
+                                const weaknessesEl = document.getElementById('ats-weaknesses');
+                                weaknessesEl.innerHTML = '';
+                                (ats.weaknesses || []).forEach(weakness => {
+                                    const li = document.createElement('li');
+                                    li.innerHTML = `<i class="fas fa-times-circle text-warning me-2"></i>${weakness}`;
+                                    weaknessesEl.appendChild(li);
+                                });
+
+                                // Display suggestions
+                                const suggestionsEl = document.getElementById('ats-suggestions');
+                                suggestionsEl.innerHTML = '';
+                                (ats.suggestions || []).forEach(suggestion => {
+                                    const li = document.createElement('li');
+                                    li.innerHTML = `<i class="fas fa-arrow-right text-primary me-2"></i>${suggestion}`;
+                                    li.className = 'mb-2';
+                                    suggestionsEl.appendChild(li);
+                                });
+                            }
+
+                            // Display Recommended Jobs
+                            if (data.recommended_jobs && data.recommended_jobs.length > 0) {
+                                const jobsCard = document.getElementById('recommended-jobs-card');
+                                const jobsList = document.getElementById('jobs-list');
+                                const noJobsMsg = document.getElementById('no-jobs-message');
+                                
+                                jobsCard.style.display = 'block';
+                                noJobsMsg.style.display = 'none';
+                                jobsList.innerHTML = '';
+
+                                data.recommended_jobs.forEach(job => {
+                                    const jobCard = document.createElement('div');
+                                    jobCard.className = 'card mb-3 border-0 shadow-sm';
+                                    jobCard.innerHTML = `
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="card-title mb-1">${job.title}</h6>
+                                                    <p class="text-muted small mb-2">
+                                                        <i class="fas fa-building me-1"></i>${job.company} 
+                                                        <i class="fas fa-map-marker-alt ms-2 me-1"></i>${job.location}
+                                                    </p>
+                                                    <p class="card-text small">${job.description.substring(0, 150)}...</p>
+                                                    ${job.salary_min ? `<p class="text-success small mb-2"><i class="fas fa-dollar-sign me-1"></i>$${job.salary_min} - $${job.salary_max}</p>` : ''}
+                                                </div>
+                                                <span class="badge bg-info">${job.source}</span>
+                                            </div>
+                                            <a href="${job.url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-external-link-alt me-1"></i>View Job
+                                            </a>
+                                        </div>
+                                    `;
+                                    jobsList.appendChild(jobCard);
+                                });
+                            } else {
+                                document.getElementById('recommended-jobs-card').style.display = 'block';
+                                document.getElementById('no-jobs-message').style.display = 'block';
+                                document.getElementById('jobs-list').innerHTML = '';
+                            }
+                            
+                            console.log('Results displayed successfully'); // Debug log
+
                             // Optional: scroll to result
                             document.getElementById('parsed-results').scrollIntoView({ behavior: 'smooth' });
 
                         } else {
+                            console.error('Error in response:', data); // Debug log
                             PlacementPartner.showAlert('danger', data.message || 'An error occurred. Please try again.');
                         }
 
@@ -251,8 +424,8 @@
                 .catch(error => {
                     clearInterval(interval);
                     processingModal.hide();
-                    console.error('Error:', error);
-                    PlacementPartner.showAlert('danger', 'An error occurred. Please try again.');
+                    console.error('Fetch error:', error); // Debug log
+                    PlacementPartner.showAlert('danger', 'An error occurred while processing your resume. Please check the console for details.');
                 });
         });
 

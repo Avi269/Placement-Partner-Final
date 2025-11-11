@@ -13,6 +13,54 @@
                 <p class="lead text-muted">Find your perfect job match with AI-powered skill analysis</p>
             </div>
 
+            <!-- Resume Summary (if available) -->
+            {% if has_resume and resume %}
+            <div class="card shadow-lg mb-4 border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-check me-2"></i>Your Resume Profile
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Candidate Information</h6>
+                            <p class="mb-1"><strong>Name:</strong> {{ resume.name|default:"Not provided" }}</p>
+                            <p class="mb-1"><strong>Email:</strong> {{ resume.email|default:"Not provided" }}</p>
+                            <p class="mb-1"><strong>Phone:</strong> {{ resume.phone|default:"Not provided" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Extracted Skills ({{ resume.extracted_skills|length }})</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if resume.extracted_skills %}
+                                    {% for skill in resume.extracted_skills %}
+                                        <span class="badge bg-primary">{{ skill }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No skills extracted</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if resume.experience %}
+                    <div class="mt-3">
+                        <h6 class="text-muted mb-2">Experience</h6>
+                        <ul class="mb-0">
+                            {% for exp in resume.experience %}
+                                <li>{{ exp }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>No resume found!</strong> Please <a href="{% url 'resume_upload' %}" class="alert-link">upload your resume</a> first to use job matching.
+            </div>
+            {% endif %}
+
             <!-- Job Description Input -->
             <div class="card shadow-lg mb-4">
                 <div class="card-header">
@@ -357,6 +405,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Submit form
         const formData = new FormData(form);
         
+        console.log('Submitting job matching request...');
+        console.log('Form data:', Object.fromEntries(formData));
+        
         fetch('{% url "job_matching" %}', {
             method: 'POST',
             body: formData,
@@ -364,8 +415,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.status);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             clearInterval(interval);
             progressBar.style.width = '100%';
             
@@ -373,9 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 processingModal.hide();
                 
                 if (data.success) {
+                    console.log('Success! Displaying results...');
                     displayResults(data);
                     PlacementPartner.showAlert('success', 'Job matching analysis completed!');
                 } else {
+                    console.error('Error from server:', data.message);
                     PlacementPartner.showAlert('danger', data.message || 'An error occurred. Please try again.');
                 }
             }, 1000);
@@ -383,21 +443,27 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             clearInterval(interval);
             processingModal.hide();
-            console.error('Error:', error);
-            PlacementPartner.showAlert('danger', 'An error occurred. Please try again.');
+            console.error('Fetch error:', error);
+            PlacementPartner.showAlert('danger', 'An error occurred: ' + error.message);
         });
     });
 
     function displayResults(data) {
+        console.log('Displaying results with data:', data);
+        
         // Update fit score
-        PlacementPartner.updateJobFitScore(data.fit_score || 0);
+        const fitScore = Math.round(data.fit_score || 0);
+        console.log('Fit score:', fitScore);
+        PlacementPartner.updateJobFitScore(fitScore);
         
         // Update breakdown scores
-        document.getElementById('skills-match').textContent = (data.skills_match || 0) + '%';
+        document.getElementById('skills-match').textContent = (data.skills_match || fitScore) + '%';
         document.getElementById('experience-match').textContent = (data.experience_match || 0) + '%';
         document.getElementById('education-match').textContent = (data.education_match || 0) + '%';
         
         // Update skills
+        console.log('Matching skills:', data.matching_skills);
+        console.log('Missing skills:', data.missing_skills);
         PlacementPartner.createSkillTags(data.matching_skills || [], document.getElementById('matching-skills'), 'matching');
         PlacementPartner.createSkillTags(data.missing_skills || [], document.getElementById('missing-skills'), 'missing');
         
@@ -407,6 +473,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show results
         resultsSection.classList.remove('d-none');
         resultsSection.scrollIntoView({ behavior: 'smooth' });
+        console.log('Results displayed successfully');
     }
 
     function updateRecommendations(recommendations) {

@@ -5,24 +5,41 @@ from typing import Dict, List, Tuple, Optional
 import spacy
 from pyresparser import ResumeParser
 import docx2txt
+from pdf2image import convert_from_path
+import pytesseract
 from pdfminer.high_level import extract_text
 from django.conf import settings
 from django.core.exceptions import ValidationError, ImproperlyConfigured
-import google.generativeai as genai
 from time import sleep
 
-# Load environment variables
-API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-if not API_KEY:
-    raise ImproperlyConfigured(
-        "Missing Gemini API key—please set GEMINI_API_KEY (or GOOGLE_API_KEY) in your environment."
-    )
-# Configure Gemini client
+# Import model backends
 try:
-    genai.configure(api_key=API_KEY)
-    GEMINI_MODEL = "gemini-1.5-flash"  # Updated model name
+    from .model_backends import get_model, MODEL_MANAGER
+    MODEL = get_model()
+    print(f"✓ Using AI model backend: {MODEL.get_backend_name()}")
 except Exception as e:
-    raise ImproperlyConfigured(f"Failed to configure Gemini client: {str(e)}")
+    print(f"⚠ Warning: Could not initialize model backends: {e}")
+    print("  Falling back to direct Gemini API if available...")
+    MODEL = None
+    
+    # Fallback to direct Gemini API
+    try:
+        import google.generativeai as genai
+        API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if API_KEY:
+            genai.configure(api_key=API_KEY)
+            GEMINI_MODEL = "gemini-2.0-flash"
+            print("✓ Using fallback Gemini API")
+        else:
+            raise ImproperlyConfigured("No AI model available")
+    except Exception as fallback_error:
+        raise ImproperlyConfigured(
+            f"No AI model backend available: {fallback_error}\n"
+            "Please configure one of:\n"
+            "1. Set GEMINI_API_KEY in .env file\n"
+            "2. Install Ollama from https://ollama.ai/\n"
+            "3. Install transformers: pip install transformers torch"
+        )
 
 # Try to import magic for file validation
 MAGIC_AVAILABLE = False
@@ -77,18 +94,33 @@ def sanitize_filename(filename: str) -> str:
     filename = os.path.basename(filename)
     return re.sub(r'[^\w\-_\.]', '', filename)
 
-def generate_with_retry(prompt: str, max_retries: int = 3, **kwargs):
-    """Helper function with retry logic for Gemini API calls"""
+def generate_with_retry(prompt: str, max_retries: int = 3, temperature: float = 0.7, max_tokens: int = 512):
+    """Helper function with retry logic for AI model calls"""
     for attempt in range(max_retries):
         try:
-            model = genai.GenerativeModel(GEMINI_MODEL)
-            response = model.generate_content(prompt, **kwargs)
-            if response.text:
-                return response
-            raise ValueError("Empty response from API")
+            if MODEL:
+                # Use model backend system
+                response_text = MODEL.generate(prompt, temperature=temperature, max_tokens=max_tokens)
+                # Create a response-like object for compatibility
+                class Response:
+                    def __init__(self, text):
+                        self.text = text
+                return Response(response_text)
+            else:
+                # Fallback to direct Gemini API
+                import google.generativeai as genai
+                model = genai.GenerativeModel(GEMINI_MODEL)
+                generation_config = genai.types.GenerationConfig(
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                )
+                response = model.generate_content(prompt, generation_config=generation_config)
+                if response.text:
+                    return response
+                raise ValueError("Empty response from API")
         except Exception as e:
             if attempt == max_retries - 1:
-                raise
+                raise ValidationError(f"AI generation failed after {max_retries} attempts: {str(e)}")
             sleep(2 ** attempt)  # Exponential backoff
 
 def generate_cover_letter_with_gemini(
@@ -110,10 +142,8 @@ def generate_cover_letter_with_gemini(
         
         response = generate_with_retry(
             prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.7,
-                max_output_tokens=512,
-            )
+            temperature=0.7,
+            max_tokens=512
         )
         return response.text.strip()
     except Exception as e:
@@ -141,10 +171,8 @@ def analyze_offer_letter_with_gemini(offer_text: str) -> Dict:
         
         response = generate_with_retry(
             prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.2,
-                max_output_tokens=600,
-            )
+            temperature=0.2,
+            max_tokens=600
         )
 
         # Remove ```json code block wrapper if present
@@ -195,10 +223,8 @@ Job Description:
 """
         response = generate_with_retry(
             prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.0,
-                max_output_tokens=300
-            )
+            temperature=0.0,
+            max_tokens=300
         )
 
         raw = response.text.strip()
@@ -236,10 +262,8 @@ def get_learning_resources_with_gemini(missing_skills: List[str]) -> List[Dict]:
 
         response = generate_with_retry(
             prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.2,
-                max_output_tokens=300,
-            )
+            temperature=0.2,
+            max_tokens=300
         )
         return json.loads(response.text.strip())
     except Exception:
@@ -265,22 +289,54 @@ def get_learning_resources_with_gemini(missing_skills: List[str]) -> List[Dict]:
     
 
 def extract_text_from_file(file_path: str) -> str:
-    """Extract text from PDF, DOCX, or DOC files."""
+    """Extract text from PDF, DOCX, or DOC files. Use OCR for scanned PDFs."""
+    # Handle file path or file object
+    if hasattr(file_path, 'path'):
+        # Django UploadedFile object
+        file_path = file_path.path
+    elif hasattr(file_path, 'name'):
+        # File object without path attribute
+        file_path = str(file_path)
+    
     ext = os.path.splitext(file_path)[1][1:].lower()
     
     try:
         if ext == 'pdf':
-            return extract_text(file_path)
+            text = extract_text(file_path)
+            if not text.strip():
+                try:
+                    # Fallback to OCR for scanned PDFs (requires Tesseract installed)
+                    pages = convert_from_path(file_path)
+                    text = "\n".join([pytesseract.image_to_string(p) for p in pages])
+                except Exception as ocr_error:
+                    # OCR failed - likely Tesseract not installed
+                    print(f"OCR extraction failed: {ocr_error}")
+                    raise ValidationError(
+                        "PDF contains no readable text and OCR extraction failed. "
+                        "Please provide a text-selectable PDF or convert to DOCX format. "
+                        "Note: Tesseract OCR may not be installed on the system."
+                    )
+            if not text.strip():
+                raise ValidationError("PDF contains no readable text. Please provide a selectable-text PDF or DOCX.")
+            return text
+
         elif ext in ['docx', 'doc']:
-            return docx2txt.process(file_path)
+            text = docx2txt.process(file_path)
+            if not text.strip():
+                raise ValidationError("Uploaded DOC/DOCX contains no readable text.")
+            return text
+
         else:
             raise ValidationError(f"Unsupported file type: {ext}")
+
+    except ValidationError:
+        raise
     except Exception as e:
         raise ValidationError(f"Failed to extract text: {str(e)}")
     
 
 def parse_resume_file(file_path):
-    text = extract_text_from_file(file_path)
+    text = extract_text_from_file(file_path) or ""
 
     prompt = f"""
     You are an AI resume parser. Extract the following fields from the resume:
@@ -310,20 +366,18 @@ def parse_resume_file(file_path):
     try:
         response = generate_with_retry(
             prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.0,
-                max_output_tokens=1024,
-            )
+            temperature=0.0,
+            max_tokens=1024
         ).text.strip()
 
-        # ✅ Remove code fences if present
+        # Remove code fences if present
         match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", response)
         cleaned = match.group(1) if match else response
 
         try:
             parsed = json.loads(cleaned) if cleaned else {}
         except json.JSONDecodeError:
-            # ✅ Attempt to repair invalid JSON
+            # Attempt to repair invalid JSON
             repaired = cleaned.strip()
             repaired = repaired.replace("\n", " ").replace("\r", " ")
             repaired = re.sub(r",\s*([}\]])", r"\1", repaired)
@@ -332,11 +386,11 @@ def parse_resume_file(file_path):
             except Exception:
                 parsed = {}
 
-        # ✅ Always enrich + fill missing defaults
+        # Enrich and fill missing defaults
         parsed = parsed or {}
-        parsed = enrich_parsed_resume(parsed)
+        parsed = enrich_parsed_resume(parsed, fallback_text=text)
 
-        # ✅ Guarantee parsed_text always exists
+        # Ensure parsed_text always exists
         if "parsed_text" not in parsed or not parsed["parsed_text"]:
             parsed["parsed_text"] = text[:2000]
 
@@ -344,36 +398,39 @@ def parse_resume_file(file_path):
 
     except Exception as e:
         raise ValidationError(f"Error parsing resume with Gemini: {str(e)}")
-    
-    
-def enrich_parsed_resume(data: dict) -> dict:
-    text = data.get("parsed_text", "")
+
+
+def enrich_parsed_resume(data: dict, fallback_text: str = "") -> dict:
+    text = data.get("parsed_text", fallback_text) or ""
 
     # Extract email
     if not data.get("email"):
         match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
-        data["email"] = match.group(0) if match else None
+        data["email"] = match.group(0) if match else ""
 
     # Extract phone
     if not data.get("phone"):
         match = re.search(r"\+?\d{10,15}", text)
-        data["phone"] = match.group(0) if match else None
+        data["phone"] = match.group(0) if match else ""
 
-    # Extract name (first line assumption)
+    # Extract name (safely first non-empty line)
     if not data.get("name"):
-        first_line = text.splitlines()[0].strip()
-        if first_line and "@" not in first_line and not first_line.startswith("+"):
-            data["name"] = first_line
+        first_line = ""
+        for line in text.splitlines():
+            line = line.strip()
+            if line and "@" not in line and not line.startswith("+"):
+                first_line = line
+                break
+        data["name"] = first_line
 
-    # Extract education (basic scan for degrees)
+    # Extract education
     if not data.get("education"):
         edu_matches = re.findall(r"(Bachelor|Master|B\.?Tech|MCA|BCA|BSc|MSc).*", text, re.I)
         data["education"] = list(set([e.strip() for e in edu_matches]))
 
-    # Extract skills (scan common keywords)
+    # Extract skills
     if not data.get("skills"):
-        skills = extract_skills_from_text(text)
-        data["skills"] = skills
+        data["skills"] = extract_skills_from_text(text)
 
     return data
 
@@ -445,3 +502,70 @@ def calculate_user_readiness_score(user_profile) -> float:
         return min(score, 100.0)
     except Exception as e:
         raise ValidationError(f"Failed to calculate readiness score: {str(e)}")
+
+
+def calculate_ats_score(resume_text: str, skills: List[str]) -> Dict:
+    """
+    Calculate ATS (Applicant Tracking System) score and provide improvement suggestions
+    
+    Returns:
+        {
+            "ats_score": 0-100,
+            "strengths": [...],
+            "weaknesses": [...],
+            "suggestions": [...],
+            "keyword_match": 0-100,
+            "format_score": 0-100,
+            "content_score": 0-100
+        }
+    """
+    try:
+        prompt = f"""
+You are an ATS (Applicant Tracking System) analyzer. Analyze this resume and provide a detailed ATS score.
+
+Resume Text:
+{resume_text[:2000]}
+
+Extracted Skills:
+{', '.join(skills[:20])}
+
+Analyze and return JSON with:
+- ats_score (0-100): Overall ATS compatibility score
+- keyword_match (0-100): How well keywords are used
+- format_score (0-100): Format and structure quality
+- content_score (0-100): Content quality and relevance
+- strengths (array of strings): What the resume does well (3-5 items)
+- weaknesses (array of strings): What needs improvement (3-5 items)
+- suggestions (array of strings): Specific actionable improvements (5-7 items)
+
+Return ONLY valid JSON, no extra text.
+"""
+        
+        response = generate_with_retry(
+            prompt,
+            temperature=0.2,
+            max_tokens=800
+        )
+        
+        raw = response.text.strip()
+        
+        # Remove code fences
+        if raw.startswith("```") and raw.endswith("```"):
+            lines = raw.splitlines()
+            raw = "\n".join(lines[1:-1]).strip()
+        
+        result = json.loads(raw)
+        
+        # Ensure all required fields exist
+        return {
+            "ats_score": int(result.get("ats_score", 70)),
+            "keyword_match": int(result.get("keyword_match", 70)),
+            "format_score": int(result.get("format_score", 75)),
+            "content_score": int(result.get("content_score", 70)),
+            "strengths": result.get("strengths", []),
+            "weaknesses": result.get("weaknesses", []),
+            "suggestions": result.get("suggestions", [])
+        }
+        
+    except Exception as e:
+        raise ValidationError(f"Failed to calculate ATS score: {str(e)}")

@@ -34,7 +34,7 @@ A comprehensive Django REST API backend for a placement assistance application t
 - **Database**: SQLite (development)
 - **File Processing**: pyresparser, pdfminer.six, python-docx
 - **NLP**: spaCy
-- **AI Integration**: Mock functions (ready for Gemini Pro integration)
+- **AI Integration**: Google Gemini API (gemini-2.0-flash)
 - **CORS**: django-cors-headers
 
 ## 📋 API Endpoints
@@ -93,7 +93,18 @@ A comprehensive Django REST API backend for a placement assistance application t
    python -m spacy download en_core_web_sm
    ```
 
-4. **Run migrations**
+4. **Set up environment variables**
+   
+   Create a `.env` file in the project root:
+   ```env
+   GEMINI_API_KEY=your_api_key_here
+   SECRET_KEY=your_django_secret_key
+   DEBUG=True
+   ```
+   
+   Get your Gemini API key from: https://makersuite.google.com/app/apikey
+
+5. **Run migrations**
    ```bash
    python manage.py makemigrations
    python manage.py migrate
@@ -175,6 +186,7 @@ Placement_Partner/
 ### Environment Variables
 - `DEBUG`: Set to `True` for development
 - `SECRET_KEY`: Django secret key
+- `GEMINI_API_KEY`: Google Gemini API key (required)
 - `ALLOWED_HOSTS`: List of allowed hosts
 
 ### File Upload Settings
@@ -184,12 +196,15 @@ Placement_Partner/
 
 ## 🤖 AI Integration
 
-The backend includes mock AI functions that can be easily replaced with actual Gemini Pro API integration:
+The backend uses Google Gemini API for AI-powered features:
 
-- `mock_generate_cover_letter()` - Cover letter generation
-- `mock_analyze_offer_letter()` - Offer letter analysis
-- `mock_calculate_job_fit()` - Job matching algorithm
-- `mock_get_learning_resources()` - Learning resource suggestions
+- **Cover Letter Generation** - Generates personalized cover letters based on resume and job description
+- **Offer Letter Analysis** - Analyzes offer letters for key terms, red flags, and negotiation points
+- **Job Fit Calculation** - Calculates job fit score and identifies skill gaps
+- **Learning Resources** - Suggests relevant learning resources for missing skills
+- **ATS Score Analysis** - Provides ATS optimization suggestions for resumes
+
+All AI features use the Gemini 2.0 Flash model for fast and reliable responses.
 
 ## 🧪 Testing
 

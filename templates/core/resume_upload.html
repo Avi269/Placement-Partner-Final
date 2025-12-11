@@ -308,6 +308,11 @@
                             document.getElementById('result-name').value = d.name || '';
                             document.getElementById('result-email').value = d.email || '';
                             document.getElementById('result-phone').value = d.phone || '';
+                            
+                            // Also populate the form input fields with extracted data
+                            if (d.name) document.getElementById('name').value = d.name;
+                            if (d.email) document.getElementById('email').value = d.email;
+                            if (d.phone) document.getElementById('phone').value = d.phone;
 
                             const skillsEl = document.getElementById('result-skills');
                             skillsEl.innerHTML = '';

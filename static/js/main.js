@@ -1,63 +1,113 @@
-// Main JavaScript for Placement Partner
+/*
+============================================================================
+PLACEMENT PARTNER - Main JavaScript File
+============================================================================
+This file handles client-side interactions for the placement partner app:
+- File upload with drag-and-drop
+- Form validation
+- AJAX submissions
+- Dynamic UI updates
+- Progress indicators
+- Tooltips and animations
+============================================================================
+*/
 
+// Initialize all components when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize all components
-    initFileUpload();
-    initFormValidation();
-    initTooltips();
-    initAnimations();
-    initProgressBars();
+    // Initialize all interactive components
+    initFileUpload();        // File upload with drag & drop
+    initFormValidation();    // Client-side form validation
+    initTooltips();          // Bootstrap tooltips
+    initAnimations();        // Page animations
+    initProgressBars();      // Animated progress bars
 });
 
-// File Upload Handling
+// ============================================================================
+// FILE UPLOAD HANDLING
+// ============================================================================
+// Handles file uploads with drag-and-drop functionality and visual feedback
+
 function initFileUpload() {
+    /**
+     * Initialize drag-and-drop file upload areas
+     * 
+     * Features:
+     * - Drag and drop files
+     * - Click to browse
+     * - File validation
+     * - Visual feedback
+     * - Display selected files
+     */
+    // Find all file upload areas on the page
     const fileUploadAreas = document.querySelectorAll('.file-upload-area');
     
     fileUploadAreas.forEach(area => {
+        // Get child elements
         const input = area.querySelector('input[type="file"]');
         const dropText = area.querySelector('.drop-text');
         const fileList = area.querySelector('.file-list');
         
+        // Skip if no file input found
         if (!input) return;
         
-        // Drag and drop functionality
+        // === DRAG AND DROP EVENTS ===
+        
+        // When file is dragged over the area
         area.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            area.classList.add('dragover');
+            e.preventDefault();  // Prevent default browser behavior
+            area.classList.add('dragover');  // Add visual feedback
         });
         
+        // When file leaves the drag area
         area.addEventListener('dragleave', () => {
-            area.classList.remove('dragover');
+            area.classList.remove('dragover');  // Remove visual feedback
         });
         
+        // When file is dropped
         area.addEventListener('drop', (e) => {
-            e.preventDefault();
+            e.preventDefault();  // Prevent file from opening in browser
             area.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            handleFiles(files, input, fileList);
+            const files = e.dataTransfer.files;  // Get dropped files
+            handleFiles(files, input, fileList);  // Process files
         });
         
-        // File input change
+        // === TRADITIONAL FILE INPUT ===
+        
+        // When user selects files via browse dialog
         input.addEventListener('change', (e) => {
             handleFiles(e.target.files, input, fileList);
         });
         
-        // Click to upload
+        // Make entire area clickable to trigger file browser
         area.addEventListener('click', () => {
-            input.click();
+            input.click();  // Programmatically open file dialog
         });
     });
 }
 
 function handleFiles(files, input, fileList) {
+    /**
+     * Process selected or dropped files
+     * 
+     * @param {FileList} files - Files to process
+     * @param {HTMLElement} input - File input element
+     * @param {HTMLElement} fileList - Container to display file list
+     * 
+     * Actions:
+     * 1. Update file input with selected files
+     * 2. Display file names and sizes
+     * 3. Auto-submit form if enabled
+     */
     if (files.length === 0) return;
     
-    // Update file input
+    // Update the file input element with selected files
     input.files = files;
     
-    // Display file list
+    // Display list of selected files with icons and sizes
     if (fileList) {
-        fileList.innerHTML = '';
+        fileList.innerHTML = '';  // Clear existing list
+        
+        // Create a UI element for each file
         Array.from(files).forEach(file => {
             const fileItem = document.createElement('div');
             fileItem.className = 'file-item d-flex align-items-center p-2 border rounded mb-2';
@@ -70,7 +120,7 @@ function handleFiles(files, input, fileList) {
         });
     }
     
-    // Trigger form submission if auto-submit is enabled
+    // Auto-submit form if data-auto-submit="true" attribute is set
     const form = input.closest('form');
     if (form && form.dataset.autoSubmit === 'true') {
         submitForm(form);
@@ -78,21 +128,43 @@ function handleFiles(files, input, fileList) {
 }
 
 function formatFileSize(bytes) {
+    /**
+     * Convert bytes to human-readable file size
+     * 
+     * @param {number} bytes - File size in bytes
+     * @returns {string} Formatted size (e.g., "2.5 MB")
+     */
     if (bytes === 0) return '0 Bytes';
-    const k = 1024;
+    
+    const k = 1024;  // 1 KB = 1024 bytes
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    
+    // Calculate appropriate unit (KB, MB, etc.)
     const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    // Format to 2 decimal places
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// Form Validation and Submission
+// ============================================================================
+// FORM VALIDATION AND SUBMISSION
+// ============================================================================
+// Client-side form validation before submitting to server
+
 function initFormValidation() {
+    /**
+     * Initialize client-side form validation
+     * 
+     * Validates forms marked with data-validate="true"
+     * Checks required fields before submission
+     */
     const forms = document.querySelectorAll('form[data-validate="true"]');
     
     forms.forEach(form => {
+        // Intercept form submission for validation
         form.addEventListener('submit', (e) => {
             if (!validateForm(form)) {
-                e.preventDefault();
+                e.preventDefault();  // Stop submission if validation fails
                 return false;
             }
         });

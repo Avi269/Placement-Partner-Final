@@ -1,36 +1,94 @@
-# accounts/views.py
-from rest_framework import generics, viewsets
-from rest_framework.permissions import AllowAny
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import get_user_model
-from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer
-from .models import UserProfile
+"""
+============================================================================
+ACCOUNTS VIEWS - User Authentication & Profile Management
+============================================================================
+This module handles user registration, login, logout, and profile management.
 
-from django.contrib.auth import authenticate, login, logout
+Views:
+- RegisterView (API): REST API endpoint for user registration
+- UserProfileViewSet (API): Manage user profiles via API
+- RegisterPage: Web interface for registration
+- LoginPage: Web interface for login
+- logout_view: Handle user logout
+
+Features:
+- JWT authentication for API
+- Session authentication for web interface
+- User profile creation with job tracking
+- Secure password hashing
+============================================================================
+"""
+
+# Django REST Framework imports
+from rest_framework import generics, viewsets
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
+# Django core imports
+from django.contrib.auth import get_user_model, authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.views import View
 
+# Local imports
+from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer
+from .models import UserProfile
+
+# Get the User model (supports custom user models)
 User = get_user_model()
 
+# ============================================================================
+# API VIEWS (REST API Endpoints)
+# ============================================================================
+
 class RegisterView(generics.CreateAPIView):
+    """
+    API endpoint for user registration
+    
+    POST /api/accounts/register/
+    
+    Body: {
+        "email": "user@example.com",
+        "password": "securepassword",
+        "first_name": "John",
+        "last_name": "Doe"
+    }
+    
+    Returns: User data with auth token
+    """
     queryset = User.objects.all()
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny]  # Allow unauthenticated access
     serializer_class = RegisterSerializer
 
 class UserProfileViewSet(viewsets.ModelViewSet):
+    """
+    API endpoints for user profile management
+    
+    GET /api/user-profile/ - Get current user's profile
+    POST /api/user-profile/ - Create profile
+    PUT/PATCH /api/user-profile/{id}/ - Update profile
+    
+    Tracks:
+    - Total applications submitted
+    - Interviews attended
+    - Offers received
+    - Calculated readiness score
+    """
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Require login
 
     def get_queryset(self):
-        # Only return the profile of the logged-in user
+        """Only return the logged-in user's profile"""
         return UserProfile.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Auto-attach profile to logged-in user
+        """Automatically link profile to logged-in user"""
         serializer.save(user=self.request.user)
+
+# ============================================================================
+# WEB INTERFACE VIEWS (Django Templates)
+# ============================================================================
 
 class RegisterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)

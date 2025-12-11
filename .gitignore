@@ -3,27 +3,83 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+.Python
 
 # Django
 db.sqlite3
 *.log
 *.pot
 *.pyc
-media/
+media/resumes/
 staticfiles/
+static/admin/
+logs/
 
 # Virtual environment
 venv/
 ENV/
+env/
 .venv/
+virtualenv/
 
 # IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
 
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Env files
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Testing
+.pytest_cache/
+.tox/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Local development
+*.sqlite3-journal
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+~*

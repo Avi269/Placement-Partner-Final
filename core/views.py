@@ -1,50 +1,129 @@
+"""
+============================================================================
+CORE VIEWS - API Endpoints & Template Views
+============================================================================
+This module contains all API viewsets and template views for the placement
+partner application.
+
+ViewSets (REST API):
+- ResumeViewSet: Upload, parse, and optimize resumes
+- JobDescriptionViewSet: Manage job postings
+- CoverLetterViewSet: Generate AI-powered cover letters
+- OfferLetterViewSet: Analyze job offers
+- SkillGapReportViewSet: Match resumes with jobs, find skill gaps
+
+Template Views (Web Interface):
+- home: Landing page
+- resume_upload_view: Resume upload interface
+- job_matching_view: Job matching interface
+- cover_letter_view: Cover letter generation interface
+- offer_analysis_view: Offer letter analysis interface
+============================================================================
+"""
+
+# Django REST Framework imports
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
+# Django core imports
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-import tempfile, os
+
+# Standard library imports
+import tempfile
+import os
 import json
 import logging
 import re
+
+# Third-party imports
 import google.generativeai as genai
+
+# Local imports - models
 from .models import Resume, JobDescription, CoverLetter, OfferLetter, SkillGapReport
+
+# Local imports - serializers
 from .serializers import (
     ResumeSerializer, JobDescriptionSerializer, CoverLetterSerializer,
     OfferLetterSerializer, SkillGapReportSerializer,
     ResumeUploadSerializer, JobMatchSerializer, CoverLetterGenerateSerializer,
     OfferLetterAnalyzeSerializer, ATSOptimizeSerializer
 )
+
+# Local imports - utility functions
 from .utils import (
-    parse_resume_file, optimize_resume_for_ats,
-    calculate_user_readiness_score, extract_skills_from_text, generate_cover_letter_with_gemini,
-    analyze_offer_letter_with_gemini,
-    calculate_job_fit_with_gemini,
-    get_learning_resources_with_gemini,
-    extract_text_from_file,
+    parse_resume_file,  # Parse PDF/DOCX resumes
+    optimize_resume_for_ats,  # Make resume ATS-friendly
+    calculate_user_readiness_score,  # Calculate job readiness
+    extract_skills_from_text,  # Extract skills from text
+    generate_cover_letter_with_gemini,  # AI cover letter generation
+    analyze_offer_letter_with_gemini,  # AI offer analysis
+    calculate_job_fit_with_gemini,  # Calculate job fit score
+    get_learning_resources_with_gemini,  # Get learning recommendations
+    extract_text_from_file,  # Extract text from files
+    calculate_ats_score,  # Calculate ATS compatibility score
 )
 
+# Local imports - job search
+from .job_search import fetch_jobs_for_skills  # Fetch real job postings
+
+# ============================================================================
+# VIEWSETS - REST API ENDPOINTS
+# ============================================================================
+
 class ResumeViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing resumes via REST API
+    
+    Endpoints:
+    - GET /api/resume/ - List all resumes
+    - POST /api/resume/ - Create new resume
+    - GET /api/resume/{id}/ - Get specific resume
+    - PUT/PATCH /api/resume/{id}/ - Update resume
+    - DELETE /api/resume/{id}/ - Delete resume
+    - POST /api/resume/upload/ - Upload and parse resume file
+    - POST /api/resume/generate/ - Generate ATS-optimized resume
+    """
     queryset = Resume.objects.all()
     serializer_class = ResumeSerializer
+    # Allow file uploads, form data, and JSON
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     @action(detail=False, methods=['post'])
     def upload(self, request):
-        """Upload and parse resume"""
+        """
+        Upload and parse resume file or text
+        
+        Accepts:
+        - file: Resume file (PDF/DOCX/TXT)
+        - parsed_text: Direct text paste
+        - name, email, phone: Optional manual input
+        
+        Process:
+        1. Save file or text to database
+        2. Parse file using AI (Gemini) or regex fallback
+        3. Extract skills, education, experience
+        4. Save resume ID in session for anonymous users
+        
+        Returns:
+        - Complete resume data with extracted information
+        """
         serializer = ResumeUploadSerializer(data=request.data)
         if serializer.is_valid():
+            # Save resume to database (with user if authenticated)
             resume = serializer.save(user=request.user)
             
             # Parse the uploaded file if provided
             if resume.file:
                 file_path = resume.file.path
                 try:
+                    # Use AI to parse resume file
                     parsed_data = parse_resume_file(file_path)
                     logging.info(f"Parsed resume data: {parsed_data}")
                 except Exception as e:
@@ -280,17 +359,42 @@ def resume_upload_view(request):
                 try:
                     # Parse resume from file
                     parsed_data = parse_resume_file(temp_file_path)
+                    logging.info("AI parsing successful")
                 except Exception as parse_error:
-                    logging.error(f"Error parsing resume: {parse_error}")
-                    parsed_data = {
-                        "name": name,
-                        "email": email,
-                        "phone": phone,
-                        "parsed_text": "",
-                        "skills": [],
-                        "education": [],
-                        "experience": []
-                    }
+                    logging.error(f"AI parsing failed: {parse_error}")
+                    logging.info("Attempting fallback extraction with regex...")
+                    
+                    # Fallback: Extract text and use regex-based parsing
+                    try:
+                        from .utils import extract_text_from_file, enrich_parsed_resume
+                        extracted_text = extract_text_from_file(temp_file_path)
+                        
+                        # Start with manual input or empty data
+                        parsed_data = {
+                            "name": name,
+                            "email": email,
+                            "phone": phone,
+                            "parsed_text": extracted_text,
+                            "skills": [],
+                            "education": [],
+                            "experience": []
+                        }
+                        
+                        # Apply enrichment to extract missing fields
+                        parsed_data = enrich_parsed_resume(parsed_data, fallback_text=extracted_text)
+                        logging.info(f"Fallback extraction complete: name={parsed_data.get('name')}, email={parsed_data.get('email')}, skills={len(parsed_data.get('skills', []))}")
+                        
+                    except Exception as fallback_error:
+                        logging.error(f"Fallback extraction also failed: {fallback_error}")
+                        parsed_data = {
+                            "name": name,
+                            "email": email,
+                            "phone": phone,
+                            "parsed_text": "",
+                            "skills": [],
+                            "education": [],
+                            "experience": []
+                        }
                 finally:
                     # Delete temp file
                     try:
@@ -328,17 +432,22 @@ def resume_upload_view(request):
                     
                     response = generate_with_retry(
                         prompt,
-                        generation_config=genai.types.GenerationConfig(
-                            temperature=0.0,
-                            max_output_tokens=1024,
-                        )
-                    ).text.strip()
+                        temperature=0.0,
+                        max_tokens=1024
+                    )
+
+                    # Extract text from response
+                    response_text = response.text.strip()
 
                     # Remove code fences if present
-                    match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", response)
-                    cleaned = match.group(1) if match else response
+                    match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", response_text)
+                    cleaned = match.group(1) if match else response_text
                     
                     parsed_data = json.loads(cleaned) if cleaned else {}
+                    
+                    # Enrich parsed data with fallback extraction
+                    from .utils import enrich_parsed_resume
+                    parsed_data = enrich_parsed_resume(parsed_data, fallback_text=parsed_text)
                     
                     # Clean up temp file
                     try:
@@ -347,18 +456,24 @@ def resume_upload_view(request):
                         pass
                     
                 except Exception as text_parse_error:
-                    logging.error(f"Error parsing text: {text_parse_error}")
+                    logging.error(f"AI text parsing failed: {text_parse_error}")
+                    logging.info("Attempting fallback enrichment for text...")
+                    
+                    # Fallback: Use enrichment
+                    from .utils import enrich_parsed_resume
                     parsed_data = {
                         "name": name,
                         "email": email,
                         "phone": phone,
                         "parsed_text": parsed_text,
-                        "skills": extract_skills_from_text(parsed_text),
+                        "skills": [],
                         "education": [],
                         "experience": []
                     }
+                    parsed_data = enrich_parsed_resume(parsed_data, fallback_text=parsed_text)
+                    logging.info(f"Fallback enrichment complete: name={parsed_data.get('name')}, email={parsed_data.get('email')}, skills={len(parsed_data.get('skills', []))}")
 
-            # Override with manually provided data if available
+            # Override with manually provided data if available (user input takes precedence)
             if name:
                 parsed_data["name"] = name
             if email:
@@ -370,10 +485,17 @@ def resume_upload_view(request):
             parsed_data.setdefault("name", "")
             parsed_data.setdefault("email", "")
             parsed_data.setdefault("phone", "")
-            parsed_data.setdefault("parsed_text", parsed_text)
+            parsed_data.setdefault("parsed_text", parsed_text or "")
             parsed_data.setdefault("skills", [])
             parsed_data.setdefault("education", [])
             parsed_data.setdefault("experience", [])
+            
+            # Ensure skills is a list, not a string
+            if isinstance(parsed_data["skills"], str):
+                parsed_data["skills"] = [s.strip() for s in parsed_data["skills"].split(',') if s.strip()]
+            
+            # Log parsed data for debugging
+            logging.info(f"Final parsed data: name={parsed_data.get('name')}, email={parsed_data.get('email')}, phone={parsed_data.get('phone')}, skills_count={len(parsed_data.get('skills', []))}")
 
             # Save resume in DB
             resume = Resume.objects.create(
@@ -392,10 +514,7 @@ def resume_upload_view(request):
             if not request.user.is_authenticated:
                 request.session["resume_id"] = resume.id
 
-            # Calculate ATS score
-            from .utils import calculate_ats_score
-            from .job_search import fetch_jobs_for_skills
-            
+            # Calculate ATS score (now includes automatic fallback)
             ats_data = {}
             recommended_jobs = []
             
@@ -404,20 +523,32 @@ def resume_upload_view(request):
                     parsed_data.get("parsed_text", ""), 
                     parsed_data.get("skills", [])
                 )
+                logging.info(f"ATS score calculated: {ats_data.get('ats_score')}")
             except Exception as e:
-                logging.warning(f"ATS calculation failed: {e}")
+                logging.error(f"ATS calculation completely failed (both AI and fallback): {e}")
+                # Only if both AI and fallback fail (very rare)
                 ats_data = {
                     "ats_score": 70,
-                    "suggestions": ["Unable to calculate detailed ATS score"]
+                    "keyword_match": 65,
+                    "format_score": 75,
+                    "content_score": 70,
+                    "strengths": ["Resume uploaded successfully"],
+                    "weaknesses": ["Unable to perform detailed analysis at this time"],
+                    "suggestions": ["Please try again later or contact support if the issue persists"]
                 }
             
             # Fetch job recommendations based on skills
             try:
                 if parsed_data.get("skills"):
+                    # Pass more skills for better matching (up to 10)
+                    skills_for_search = parsed_data.get("skills", [])[:10]
+                    logging.info(f"Fetching jobs for skills: {skills_for_search}")
                     recommended_jobs = fetch_jobs_for_skills(
-                        parsed_data.get("skills", [])[:5],  # Top 5 skills
+                        skills_for_search,
+                        location="in",
                         max_results=10
                     )
+                    logging.info(f"Fetched {len(recommended_jobs)} recommended jobs")
             except Exception as e:
                 logging.warning(f"Job fetch failed: {e}")
 
@@ -458,9 +589,23 @@ def job_matching_view(request):
             if resume_id:
                 resume = Resume.objects.filter(id=resume_id).first()
         
+        # Fetch recommended jobs immediately on page load
+        recommended_jobs = []
+        if resume and resume.extracted_skills:
+            try:
+                recommended_jobs = fetch_jobs_for_skills(
+                    resume.extracted_skills,
+                    location="in",
+                    max_results=10
+                )
+                logging.info(f"Loaded {len(recommended_jobs)} jobs for page display")
+            except Exception as e:
+                logging.error(f"Error fetching jobs for page load: {e}")
+        
         context = {
             'resume': resume,
-            'has_resume': resume is not None
+            'has_resume': resume is not None,
+            'recommended_jobs': recommended_jobs
         }
         return render(request, 'core/job_matching.html', context)
 
@@ -487,23 +632,180 @@ def job_matching_view(request):
 
             logging.info(f"Resume skills: {resume.extracted_skills}")
             
-            # Calculate job fit with AI
-            fit_score, matching_skills, missing_skills = calculate_job_fit_with_gemini(
-                resume.extracted_skills,
-                jd_text  # ✅ send full JD to Gemini
-            )
+            # Calculate job fit with AI (has built-in fallback)
+            try:
+                fit_score, matching_skills, missing_skills = calculate_job_fit_with_gemini(
+                    resume.extracted_skills,
+                    jd_text
+                )
+                logging.info(f"Job matching complete. Fit score: {fit_score}")
+            except Exception as match_error:
+                # This shouldn't happen since calculate_job_fit_with_gemini has fallback
+                # But just in case, use direct fallback
+                logging.error(f"Job matching failed completely: {match_error}")
+                from .utils import calculate_job_fit_with_fallback
+                fit_score, matching_skills, missing_skills = calculate_job_fit_with_fallback(
+                    resume.extracted_skills,
+                    jd_text
+                )
+                logging.info(f"Fallback job matching complete. Fit score: {fit_score}")
             
-            logging.info(f"Job matching complete. Fit score: {fit_score}")
+            # Calculate experience match
+            experience_match = 0
+            jd_lower = jd_text.lower()
             
-            # Get learning resources
+            # Extract years of experience from JD
+            import re
+            exp_patterns = [r'(\d+)\+?\s*(?:years?|yrs?)\s+(?:of\s+)?experience',
+                          r'experience\s+of\s+(\d+)\+?\s*(?:years?|yrs?)',
+                          r'minimum\s+(\d+)\+?\s*(?:years?|yrs?)']
+            required_years = 0
+            for pattern in exp_patterns:
+                match = re.search(pattern, jd_lower)
+                if match:
+                    required_years = int(match.group(1))
+                    break
+            
+            # Extract years from resume experience
+            resume_years = 0
+            if resume.experience:
+                for exp in resume.experience:
+                    exp_str = str(exp).lower()
+                    year_match = re.search(r'(\d+)\+?\s*(?:years?|yrs?)', exp_str)
+                    if year_match:
+                        resume_years = max(resume_years, int(year_match.group(1)))
+            
+            # Calculate experience match score
+            if required_years == 0:
+                experience_match = 75  # No specific requirement, give decent score
+            elif resume_years >= required_years:
+                experience_match = 100  # Meets or exceeds requirement
+            elif resume_years >= required_years * 0.7:
+                experience_match = 80  # Close to requirement
+            elif resume_years >= required_years * 0.5:
+                experience_match = 60  # Half the requirement
+            else:
+                experience_match = max(30, int((resume_years / required_years) * 100))
+            
+            logging.info(f"Experience match: {experience_match}% (Resume: {resume_years} years, Required: {required_years} years)")
+            
+            # Calculate education match
+            education_match = 0
+            education_keywords = {
+                'phd': ['phd', 'ph.d', 'doctorate', 'doctoral'],
+                'masters': ['masters', 'master', 'm.tech', 'mtech', 'm.sc', 'msc', 'mba', 'ms'],
+                'bachelors': ['bachelors', 'bachelor', 'b.tech', 'btech', 'b.sc', 'bsc', 'b.e', 'be', 'bca', 'bba'],
+                'diploma': ['diploma', 'associate']
+            }
+            
+            # Check what education is required
+            required_edu_level = 0
+            for level, keywords in education_keywords.items():
+                for keyword in keywords:
+                    if keyword in jd_lower:
+                        if level == 'phd':
+                            required_edu_level = 4
+                        elif level == 'masters':
+                            required_edu_level = max(required_edu_level, 3)
+                        elif level == 'bachelors':
+                            required_edu_level = max(required_edu_level, 2)
+                        elif level == 'diploma':
+                            required_edu_level = max(required_edu_level, 1)
+                        break
+            
+            # Check resume education
+            resume_edu_level = 0
+            if resume.education:
+                for edu in resume.education:
+                    edu_str = str(edu).lower()
+                    if any(k in edu_str for k in education_keywords['phd']):
+                        resume_edu_level = 4
+                    elif any(k in edu_str for k in education_keywords['masters']):
+                        resume_edu_level = max(resume_edu_level, 3)
+                    elif any(k in edu_str for k in education_keywords['bachelors']):
+                        resume_edu_level = max(resume_edu_level, 2)
+                    elif any(k in edu_str for k in education_keywords['diploma']):
+                        resume_edu_level = max(resume_edu_level, 1)
+            
+            # Calculate education match score
+            if required_edu_level == 0:
+                education_match = 80  # No specific requirement
+            elif resume_edu_level >= required_edu_level:
+                education_match = 100  # Meets or exceeds
+            elif resume_edu_level == required_edu_level - 1:
+                education_match = 70  # One level below
+            elif resume_edu_level > 0:
+                education_match = 50  # Has some education
+            else:
+                education_match = 30  # No education info
+            
+            logging.info(f"Education match: {education_match}% (Resume level: {resume_edu_level}, Required level: {required_edu_level})")
+            
+            # Get learning resources (has built-in fallback)
             learning_resources = get_learning_resources_with_gemini(missing_skills)
 
+            # Generate resume improvement suggestions
+            resume_improvements = [
+                {
+                    "category": "Missing Skills",
+                    "priority": "High",
+                    "suggestion": f"Add {len(missing_skills)} missing skills to your resume",
+                    "details": f"Focus on: {', '.join(missing_skills[:5])}" + (" and more" if len(missing_skills) > 5 else ""),
+                    "action": "Update your skills section with relevant experience and projects"
+                },
+                {
+                    "category": "Skill Match",
+                    "priority": "Medium" if fit_score >= 50 else "High",
+                    "suggestion": f"Your current match rate is {fit_score}%",
+                    "details": f"You have {len(matching_skills)} out of required skills. Aim for 80%+ match.",
+                    "action": "Learn the missing skills through online courses and add projects demonstrating them"
+                },
+                {
+                    "category": "Keywords",
+                    "priority": "Medium",
+                    "suggestion": "Optimize for Applicant Tracking Systems (ATS)",
+                    "details": "Include job-specific keywords naturally in your experience and skills sections",
+                    "action": "Mirror the job description language while staying truthful about your experience"
+                },
+                {
+                    "category": "Quantifiable Achievements",
+                    "priority": "High",
+                    "suggestion": "Add measurable results to your experience",
+                    "details": "Include metrics like 'Improved performance by 30%' or 'Reduced costs by ₹2L'",
+                    "action": "Review each experience bullet point and add numbers, percentages, or specific outcomes"
+                },
+                {
+                    "category": "Projects",
+                    "priority": "High",
+                    "suggestion": "Build projects showcasing missing skills",
+                    "details": f"Create 2-3 projects using: {', '.join(missing_skills[:3])}",
+                    "action": "Add GitHub links and detailed project descriptions to your resume"
+                }
+            ]
+
+            # Fetch recommended jobs based on resume skills
+            recommended_jobs = []
+            try:
+                if resume.extracted_skills:
+                    logging.info(f"Fetching jobs for skills: {resume.extracted_skills}")
+                    recommended_jobs = fetch_jobs_for_skills(
+                        resume.extracted_skills,
+                        location="in",
+                        max_results=10
+                    )
+                    logging.info(f"Found {len(recommended_jobs)} recommended jobs")
+            except Exception as job_error:
+                logging.error(f"Error fetching recommended jobs: {job_error}")
+
+            # Calculate overall weighted fit score
+            overall_fit_score = int((fit_score * 0.5) + (experience_match * 0.3) + (education_match * 0.2))
+            
             return JsonResponse({
                 "success": True,
-                "fit_score": fit_score,
+                "fit_score": overall_fit_score,
                 "skills_match": fit_score,
-                "experience_match": 0,
-                "education_match": 0,
+                "experience_match": experience_match,
+                "education_match": education_match,
                 "matching_skills": matching_skills,
                 "missing_skills": missing_skills,
                 "resume_data": {
@@ -514,7 +816,15 @@ def job_matching_view(request):
                 },
                 "recommendations": {
                     "skills_to_develop": missing_skills,
-                    "learning_resources": learning_resources
+                    "learning_resources": learning_resources,
+                    "resume_improvements": resume_improvements
+                },
+                "recommended_jobs": recommended_jobs,
+                "match_details": {
+                    "required_experience_years": required_years,
+                    "resume_experience_years": resume_years,
+                    "required_education_level": required_edu_level,
+                    "resume_education_level": resume_edu_level
                 }
             })
 
@@ -534,38 +844,130 @@ def cover_letter_view(request):
         jd_text = request.POST.get('job_description', '')
         resume_text = request.POST.get('resume_text', '')
         custom_prompt = request.POST.get('custom_prompt', '')
+        applicant_name = request.POST.get('applicant_name', '')
+        applicant_email = request.POST.get('applicant_email', '')
 
         try:
-            # Generate cover letter via Gemini helper
+            # Generate cover letter via Gemini helper (has built-in fallback)
             cover_letter = generate_cover_letter_with_gemini(
                 resume_text=resume_text,
                 jd_text=jd_text,
-                custom_prompt=custom_prompt
+                custom_prompt=custom_prompt,
+                applicant_name=applicant_name,
+                applicant_email=applicant_email,
+                job_title=job_title,
+                company_name=company_name
             )
+            
+            # Check if fallback was used
+            if "template-based approach" in cover_letter:
+                logging.info("Cover letter generated using fallback template")
+                fallback_message = "Cover letter generated using template (AI quota exceeded). Please customize it with your details."
+            else:
+                logging.info("Cover letter generated using AI")
+                fallback_message = None
+                
         except ValidationError as e:
             message = str(e)
+            logging.error(f"Validation error in cover letter generation: {message}")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'message': message})
             messages.error(request, message)
             return redirect('cover_letter')
         except Exception as e:
             logging.exception("Error generating cover letter")
-            message = f"Unexpected error generating cover letter: {e}"
+            # This should rarely happen since generate_cover_letter_with_gemini has fallback
+            message = "Unable to generate cover letter. Please try again."
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'message': message})
-            messages.error(request, "An unexpected error occurred while generating the cover letter.")
+            messages.error(request, message)
             return redirect('cover_letter')
 
         # AJAX success response
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'cover_letter': cover_letter})
+            response_data = {'success': True, 'cover_letter': cover_letter}
+            if fallback_message:
+                response_data['warning'] = fallback_message
+            return JsonResponse(response_data)
 
         # Non-AJAX success path
-        messages.success(request, 'Cover letter generated successfully!')
+        if fallback_message:
+            messages.warning(request, fallback_message)
+        else:
+            messages.success(request, 'Cover letter generated successfully!')
         return render(request, 'core/cover_letter.html', {'cover_letter': cover_letter})
 
-    # GET request: simply render the template
-    return render(request, 'core/cover_letter.html')
+    # GET request: fetch recommended jobs and render the template
+    recommended_jobs = []
+    resume = None
+    
+    # Get resume for authenticated or session user
+    if request.user.is_authenticated:
+        resume = Resume.objects.filter(user=request.user).last()
+    else:
+        resume_id = request.session.get("resume_id")
+        resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
+    
+    # Fetch recommended jobs based on resume skills
+    if resume and resume.extracted_skills:
+        try:
+            logging.info(f"Fetching jobs for cover letter page. Skills: {resume.extracted_skills[:5]}")
+            recommended_jobs = fetch_jobs_for_skills(
+                resume.extracted_skills,
+                location="in",
+                max_results=10
+            )
+            logging.info(f"Loaded {len(recommended_jobs)} jobs for cover letter page")
+        except Exception as e:
+            logging.error(f"Error fetching jobs for cover letter page: {e}")
+    
+    # Prepare resume summary from extracted data
+    resume_summary = ""
+    if resume:
+        # Build resume summary from experience, education, and skills
+        summary_parts = []
+        
+        if resume.experience:
+            exp_text = "Experience: "
+            exp_items = []
+            for exp in resume.experience[:3]:  # Top 3 experiences
+                if isinstance(exp, dict):
+                    title = exp.get('title', exp.get('position', ''))
+                    company = exp.get('company', '')
+                    if title or company:
+                        exp_items.append(f"{title} at {company}" if title and company else (title or company))
+                elif isinstance(exp, str):
+                    exp_items.append(exp)
+            if exp_items:
+                summary_parts.append(exp_text + "; ".join(exp_items))
+        
+        if resume.education:
+            edu_text = "Education: "
+            edu_items = []
+            for edu in resume.education[:2]:  # Top 2 education entries
+                if isinstance(edu, dict):
+                    degree = edu.get('degree', edu.get('qualification', ''))
+                    school = edu.get('school', edu.get('institution', ''))
+                    if degree or school:
+                        edu_items.append(f"{degree} from {school}" if degree and school else (degree or school))
+                elif isinstance(edu, str):
+                    edu_items.append(edu)
+            if edu_items:
+                summary_parts.append(edu_text + "; ".join(edu_items))
+        
+        if resume.extracted_skills:
+            skills_text = f"Key Skills: {', '.join(resume.extracted_skills[:10])}"
+            summary_parts.append(skills_text)
+        
+        resume_summary = "\n\n".join(summary_parts)
+    
+    context = {
+        'has_resume': resume is not None,
+        'resume': resume,
+        'resume_summary': resume_summary,
+        'recommended_jobs': recommended_jobs
+    }
+    return render(request, 'core/cover_letter.html', context)
 
 @csrf_exempt
 def offer_analysis_view(request):

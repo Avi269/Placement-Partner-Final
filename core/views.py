@@ -78,48 +78,19 @@ from .job_search import fetch_jobs_for_skills  # Fetch real job postings
 # ============================================================================
 
 class ResumeViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing resumes via REST API
-    
-    Endpoints:
-    - GET /api/resume/ - List all resumes
-    - POST /api/resume/ - Create new resume
-    - GET /api/resume/{id}/ - Get specific resume
-    - PUT/PATCH /api/resume/{id}/ - Update resume
-    - DELETE /api/resume/{id}/ - Delete resume
-    - POST /api/resume/upload/ - Upload and parse resume file
-    - POST /api/resume/generate/ - Generate ATS-optimized resume
-    """
+    """ViewSet for managing resumes via REST API - Anonymous uploads only"""
     queryset = Resume.objects.all()
     serializer_class = ResumeSerializer
-    # Allow file uploads, form data, and JSON
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     @action(detail=False, methods=['post'])
     def upload(self, request):
-        """
-        Upload and parse resume file or text
-        
-        Accepts:
-        - file: Resume file (PDF/DOCX/TXT)
-        - parsed_text: Direct text paste
-        - name, email, phone: Optional manual input
-        
-        Process:
-        1. Save file or text to database
-        2. Parse file using AI (Gemini) or regex fallback
-        3. Extract skills, education, experience
-        4. Save resume ID in session for anonymous users
-        
-        Returns:
-        - Complete resume data with extracted information
-        """
+        """Upload and parse resume file or text"""
         serializer = ResumeUploadSerializer(data=request.data)
         if serializer.is_valid():
-            # Save resume to database (with user if authenticated)
-            resume = serializer.save(user=request.user)
+            # Always save as anonymous user
+            resume = serializer.save(user=None)
             
-            # Parse the uploaded file if provided
             if resume.file:
                 file_path = resume.file.path
                 try:
@@ -145,9 +116,8 @@ class ResumeViewSet(viewsets.ModelViewSet):
                 
                 resume.save()
 
-                # ✅ Save resume in session if user is not logged in
-                if not request.user.is_authenticated:
-                    request.session["resume_id"] = resume.id
+                # ✅ Always save resume in session (no auth check)
+                request.session["resume_id"] = resume.id
 
             elif resume.parsed_text and not resume.extracted_skills:
                 # Extract skills from provided text
@@ -180,14 +150,16 @@ class ResumeViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        """Always create resume without user"""
+        serializer.save(user=None)
 
 class JobDescriptionViewSet(viewsets.ModelViewSet):
     queryset = JobDescription.objects.all()
     serializer_class = JobDescriptionSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        """Create job description without user"""
+        serializer.save(user=None)
 
 class CoverLetterViewSet(viewsets.ModelViewSet):
     queryset = CoverLetter.objects.all()
@@ -229,7 +201,8 @@ class OfferLetterViewSet(viewsets.ModelViewSet):
         """Analyze offer letter"""
         serializer = OfferLetterAnalyzeSerializer(data=request.data)
         if serializer.is_valid():
-            offer_letter = serializer.save(user=request.user)
+            # Save without user
+            offer_letter = serializer.save(user=None)
             
             # Extract text from file or use provided text
             offer_text = offer_letter.text or ""
@@ -329,7 +302,6 @@ def home(request):
 @csrf_exempt
 def resume_upload_view(request):
     if request.method == 'GET':
-        # Render the resume upload page
         return render(request, 'core/resume_upload.html')
 
     elif request.method == 'POST':
@@ -519,9 +491,9 @@ def resume_upload_view(request):
             # Log parsed data for debugging
             logging.info(f"Final parsed data: name='{parsed_data.get('name')}', email='{parsed_data.get('email')}', phone='{parsed_data.get('phone')}', skills={parsed_data.get('skills', [])}, skills_count={len(parsed_data.get('skills', []))}")
 
-            # Save resume in DB
+            # Save resume (always anonymous)
             resume = Resume.objects.create(
-                user=request.user if request.user.is_authenticated else None,
+                user=None,  # No user association
                 file=resume_file if resume_file else None,
                 name=parsed_data.get("name", ""),
                 email=parsed_data.get("email", ""),
@@ -532,10 +504,9 @@ def resume_upload_view(request):
                 experience=parsed_data.get("experience", [])
             )
 
-            # Save resume ID in session for anonymous users
-            if not request.user.is_authenticated:
-                request.session["resume_id"] = resume.id
-
+            # Always save resume ID in session for anonymous tracking
+            request.session["resume_id"] = resume.id
+            
             # Calculate ATS score (now includes automatic fallback)
             ats_data = {}
             recommended_jobs = []
@@ -627,14 +598,11 @@ def resume_upload_view(request):
 @csrf_exempt
 def job_matching_view(request):
     if request.method == 'GET':
-        # Get resume for display
+        # ✅ Get resume from session only (no auth check)
         resume = None
-        if request.user.is_authenticated:
-            resume = Resume.objects.filter(user=request.user).last()
-        else:
-            resume_id = request.session.get("resume_id")
-            if resume_id:
-                resume = Resume.objects.filter(id=resume_id).first()
+        resume_id = request.session.get("resume_id")
+        if resume_id:
+            resume = Resume.objects.filter(id=resume_id).first()
         
         # Fetch recommended jobs immediately on page load
         recommended_jobs = []
@@ -663,15 +631,11 @@ def job_matching_view(request):
             
             logging.info(f"Job matching request received. JD text length: {len(jd_text)}")
 
-            # ✅ Get resume depending on auth
+            # ✅ Get resume from session only (no auth check)
             resume = None
-            if request.user.is_authenticated:
-                resume = Resume.objects.filter(user=request.user).last()
-                logging.info(f"Authenticated user. Resume found: {resume is not None}")
-            else:
-                resume_id = request.session.get("resume_id")
-                logging.info(f"Anonymous user. Session resume_id: {resume_id}")
-                resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
+            resume_id = request.session.get("resume_id")
+            logging.info(f"Session resume_id: {resume_id}")
+            resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
 
             if not resume:
                 logging.warning("No resume found for job matching")
@@ -883,7 +847,7 @@ def job_matching_view(request):
         return JsonResponse({"success": False, "message": "Invalid method"})
 
 def cover_letter_view(request):
-    """Render the cover letter page and handle AJAX generation."""
+    """Render the cover letter page"""
     if request.method == 'POST':
         # Extract form data
         job_title = request.POST.get('job_title', '')
@@ -944,29 +908,19 @@ def cover_letter_view(request):
             messages.success(request, 'Cover letter generated successfully!')
         return render(request, 'core/cover_letter.html', {'cover_letter': cover_letter})
 
-    # GET request: fetch recommended jobs and render the template
+    # GET request: fetch resume from session only
     recommended_jobs = []
     resume = None
     
-    # Get resume for authenticated or session user
-    if request.user.is_authenticated:
-        resume = Resume.objects.filter(user=request.user).last()
-    else:
-        resume_id = request.session.get("resume_id")
-        resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
+    resume_id = request.session.get("resume_id")
+    resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
     
-    # Fetch recommended jobs based on resume skills
+    # Fetch jobs based on skills
     if resume and resume.extracted_skills:
         try:
-            logging.info(f"Fetching jobs for cover letter page. Skills: {resume.extracted_skills[:5]}")
-            recommended_jobs = fetch_jobs_for_skills(
-                resume.extracted_skills,
-                location="in",
-                max_results=10
-            )
-            logging.info(f"Loaded {len(recommended_jobs)} jobs for cover letter page")
+            recommended_jobs = fetch_jobs_for_skills(resume.extracted_skills, location="in", max_results=10)
         except Exception as e:
-            logging.error(f"Error fetching jobs for cover letter page: {e}")
+            logging.error(f"Error fetching jobs: {e}")
     
     # Prepare resume summary from extracted data
     resume_summary = ""

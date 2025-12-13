@@ -13116,3 +13116,601 @@ INFO 2025-12-13 21:30:35,922 job_search 20408 13380 Returning 10 unique jobs aft
 INFO 2025-12-13 21:30:35,922 job_search 20408 13380 Added 10 Indian jobs
 INFO 2025-12-13 21:30:35,923 job_search 20408 13380 Total unique jobs found: 10
 INFO 2025-12-13 21:30:35,923 views 20408 13380 Found 10 recommended jobs
+INFO 2025-12-13 22:19:18,479 job_search 18668 1692 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 22:19:23,984 job_search 15684 19088 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 22:19:31,643 job_search 10548 18452 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 22:20:59,265 autoreload 13352 16340 Watching for file changes with StatReloader
+INFO 2025-12-13 22:21:02,604 job_search 13352 16340 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+WARNING 2025-12-13 22:21:09,280 log 13352 12108 Not Found: /favicon.ico
+INFO 2025-12-13 22:23:08,624 utils 13352 12108 pdfminer extracted 2790 characters successfully
+WARNING 2025-12-13 22:23:09,762 utils 13352 12108 API call failed (attempt 1/3): 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 53.283089508s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 53
+}
+]
+WARNING 2025-12-13 22:23:11,040 utils 13352 12108 API call failed (attempt 2/3): 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 52.091347488s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 52
+}
+]
+WARNING 2025-12-13 22:23:13,235 utils 13352 12108 API quota exceeded or rate limit hit: ['AI generation failed after 3 attempts: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash\nPlease retry in 49.805297648s. [links {\n  description: "Learn more about Gemini API quotas"\n  url: "https://ai.google.dev/gemini-api/docs/rate-limits"\n}\n, violations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"\n  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\n, retry_delay {\n  seconds: 49\n}\n]']
+INFO 2025-12-13 22:23:13,237 utils 13352 12108 Using comprehensive fallback regex extraction due to API limits...
+INFO 2025-12-13 22:23:13,247 utils 13352 12108 Found 2 roll/ID numbers to exclude: ['239', '131']
+INFO 2025-12-13 22:23:13,685 views 13352 12108 AI parsing successful
+INFO 2025-12-13 22:23:13,687 views 13352 12108 Final parsed data: name='Atanu Debnath', email='atanudebnath41@gmail.com', phone='+91 9641410649', skills=['agile', 'angular', 'api', 'css', 'django', 'git', 'github', 'html', 'java', 'javascript', 'python', 'react', 'rest', 'sql'], skills_count=14
+WARNING 2025-12-13 22:23:13,913 utils 13352 12108 API call failed (attempt 1/3): 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 49.125734278s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 49
+}
+]
+WARNING 2025-12-13 22:23:15,103 utils 13352 12108 API call failed (attempt 2/3): 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 47.939689297s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 47
+}
+]
+WARNING 2025-12-13 22:23:17,302 utils 13352 12108 AI-based ATS analysis failed, using rule-based fallback: ['AI generation failed after 3 attempts: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash\nPlease retry in 45.748007206s. [links {\n  description: "Learn more about Gemini API quotas"\n  url: "https://ai.google.dev/gemini-api/docs/rate-limits"\n}\n, violations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"\n  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\n, retry_delay {\n  seconds: 45\n}\n]']
+INFO 2025-12-13 22:23:17,307 views 13352 12108 ATS score calculated: 82
+INFO 2025-12-13 22:23:17,309 views 13352 12108 Fetching jobs for skills: ['agile', 'angular', 'api', 'css', 'django', 'git', 'github', 'html', 'java', 'javascript']
+INFO 2025-12-13 22:23:17,310 job_search 13352 12108 Searching for jobs with skills: agile, angular, api, css, django, git, github, html, java, javascript in 10
+INFO 2025-12-13 22:23:19,245 job_search 13352 12108 Found 3 jobs from Remotive
+INFO 2025-12-13 22:23:19,249 job_search 13352 12108 Got 3 jobs from Remotive
+INFO 2025-12-13 22:23:20,797 job_search 13352 12108 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 22:23:20,804 job_search 13352 12108 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 22:23:20,806 job_search 13352 12108 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 22:23:20,807 job_search 13352 12108 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 22:23:20,808 job_search 13352 12108 Returning 8 unique jobs after deduplication
+INFO 2025-12-13 22:23:20,809 job_search 13352 12108 Added 8 Indian jobs
+INFO 2025-12-13 22:23:20,814 job_search 13352 12108 Total unique jobs found: 8
+INFO 2025-12-13 22:23:20,820 views 13352 12108 Fetched 8 recommended jobs
+INFO 2025-12-13 22:23:20,821 views 13352 12108 Sample job: React Native Senior Developer at Everbreed Systems, LLC
+INFO 2025-12-13 22:29:25,895 autoreload 13352 16340 D:\Projects\Placement_partner-final\Placement_Partner\core\utils.py changed, reloading.
+INFO 2025-12-13 22:29:29,841 autoreload 15140 14284 Watching for file changes with StatReloader
+INFO 2025-12-13 22:29:35,654 job_search 15140 14284 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 23:02:14,807 job_search 6068 2036 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 23:02:16,038 autoreload 18596 19100 Watching for file changes with StatReloader
+INFO 2025-12-13 23:02:17,068 job_search 18596 19100 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+WARNING 2025-12-13 23:02:53,743 ai_helpers 18596 8448 API call failed (attempt 1/3): 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash-exp
+Please retry in 9.286153055s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 9
+}
+]
+WARNING 2025-12-13 23:02:54,957 ai_helpers 18596 8448 API call failed (attempt 2/3): 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+Please retry in 8.080487216s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 8
+}
+]
+ERROR 2025-12-13 23:02:57,165 ai_helpers 18596 8448 AI resume parsing failed: ['AI generation failed after 3 attempts: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash-exp\nPlease retry in 5.866201299s. [links {\n  description: "Learn more about Gemini API quotas"\n  url: "https://ai.google.dev/gemini-api/docs/rate-limits"\n}\n, violations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"\n  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\n, retry_delay {\n  seconds: 5\n}\n]']
+ERROR 2025-12-13 23:02:57,168 utils 18596 8448 AI resume parsing failed: ['AI generation failed after 3 attempts: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash-exp\nPlease retry in 5.866201299s. [links {\n  description: "Learn more about Gemini API quotas"\n  url: "https://ai.google.dev/gemini-api/docs/rate-limits"\n}\n, violations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"\n  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\n, retry_delay {\n  seconds: 5\n}\n]']
+INFO 2025-12-13 23:02:57,169 views 18596 8448 AI parsing successful
+INFO 2025-12-13 23:02:57,170 views 18596 8448 Final parsed data: name='', email='', phone='', skills=[], skills_count=0
+WARNING 2025-12-13 23:02:57,514 ai_helpers 18596 8448 API call failed (attempt 1/3): 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+Please retry in 5.527283763s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 5
+}
+]
+WARNING 2025-12-13 23:02:58,715 ai_helpers 18596 8448 API call failed (attempt 2/3): 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+Please retry in 4.310516802s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 4
+}
+]
+ERROR 2025-12-13 23:03:00,915 ai_helpers 18596 8448 AI resume optimization failed: ['AI generation failed after 3 attempts: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash-exp\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp\nPlease retry in 2.10537181s. [links {\n  description: "Learn more about Gemini API quotas"\n  url: "https://ai.google.dev/gemini-api/docs/rate-limits"\n}\n, violations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"\n  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\nviolations {\n  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"\n  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"\n  quota_dimensions {\n    key: "model"\n    value: "gemini-2.0-flash-exp"\n  }\n  quota_dimensions {\n    key: "location"\n    value: "global"\n  }\n}\n, retry_delay {\n  seconds: 2\n}\n]']
+INFO 2025-12-13 23:03:00,916 views 18596 8448 ATS score calculated: 70
+WARNING 2025-12-13 23:03:00,917 views 18596 8448 No skills found, cannot fetch job recommendations
+INFO 2025-12-13 23:15:01,104 autoreload 18596 19100 D:\Projects\Placement_partner-final\Placement_Partner\core\ai_helpers.py changed, reloading.
+INFO 2025-12-13 23:15:03,777 autoreload 17160 4040 Watching for file changes with StatReloader
+INFO 2025-12-13 23:15:04,708 job_search 17160 4040 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 23:15:24,868 views 17160 14320 AI parsing successful
+INFO 2025-12-13 23:15:24,870 views 17160 14320 Final parsed data: name='Atanu Debnath', email='atanudebnath41@gmail.com', phone='+91 9641410649', skills=['java', 'javascript', 'react', 'github', 'git', 'django', 'sql', 'angular', 'python'], skills_count=9
+INFO 2025-12-13 23:15:25,142 views 17160 14320 ATS score calculated: 70
+INFO 2025-12-13 23:15:25,146 views 17160 14320 Fetching jobs for skills: ['java', 'javascript', 'react', 'github', 'git', 'django', 'sql', 'angular', 'python']
+INFO 2025-12-13 23:15:25,147 job_search 17160 14320 Searching for jobs with skills: java, javascript, react, github, git, django, sql, angular, python in 10
+INFO 2025-12-13 23:15:26,455 job_search 17160 14320 Found 5 jobs from Remotive
+INFO 2025-12-13 23:15:26,458 job_search 17160 14320 Got 5 jobs from Remotive
+INFO 2025-12-13 23:15:27,634 job_search 17160 14320 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:15:27,636 job_search 17160 14320 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:15:27,636 job_search 17160 14320 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:15:27,637 job_search 17160 14320 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:15:27,638 job_search 17160 14320 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:15:27,638 job_search 17160 14320 Added 10 Indian jobs
+INFO 2025-12-13 23:15:27,639 job_search 17160 14320 Total unique jobs found: 10
+INFO 2025-12-13 23:15:27,652 views 17160 14320 Fetched 10 recommended jobs
+INFO 2025-12-13 23:15:27,652 views 17160 14320 Sample job: Tech Lead Databricks Data Engineer at Mitre Media
+INFO 2025-12-13 23:15:50,884 job_search 17160 14320 Searching for jobs with skills: java, javascript, react, github, git, django, sql, angular, python in 10
+INFO 2025-12-13 23:15:51,763 job_search 17160 14320 Found 5 jobs from Remotive
+INFO 2025-12-13 23:15:51,765 job_search 17160 14320 Got 5 jobs from Remotive
+INFO 2025-12-13 23:15:52,770 job_search 17160 14320 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:15:52,774 job_search 17160 14320 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:15:52,775 job_search 17160 14320 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:15:52,775 job_search 17160 14320 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:15:52,784 job_search 17160 14320 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:15:52,785 job_search 17160 14320 Added 10 Indian jobs
+INFO 2025-12-13 23:15:52,786 job_search 17160 14320 Total unique jobs found: 10
+INFO 2025-12-13 23:15:52,789 views 17160 14320 Loaded 10 jobs for page display
+INFO 2025-12-13 23:16:06,758 views 17160 14320 Job matching request received. JD text length: 500
+INFO 2025-12-13 23:16:06,764 views 17160 14320 Session resume_id: 3
+INFO 2025-12-13 23:16:06,765 views 17160 14320 Resume skills: ['java', 'javascript', 'react', 'github', 'git', 'django', 'sql', 'angular', 'python']
+INFO 2025-12-13 23:16:07,033 views 17160 14320 Job matching complete. Fit score: 0.0
+INFO 2025-12-13 23:16:07,034 views 17160 14320 Experience match: 75% (Resume: 0 years, Required: 0 years)
+INFO 2025-12-13 23:16:07,035 views 17160 14320 Education match: 80% (Resume level: 0, Required level: 0)
+INFO 2025-12-13 23:16:07,035 views 17160 14320 Fetching jobs for skills: ['java', 'javascript', 'react', 'github', 'git', 'django', 'sql', 'angular', 'python']
+INFO 2025-12-13 23:16:07,036 job_search 17160 14320 Searching for jobs with skills: java, javascript, react, github, git, django, sql, angular, python in 10
+INFO 2025-12-13 23:16:07,845 job_search 17160 14320 Found 5 jobs from Remotive
+INFO 2025-12-13 23:16:07,850 job_search 17160 14320 Got 5 jobs from Remotive
+INFO 2025-12-13 23:16:08,658 job_search 17160 14320 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:16:08,667 job_search 17160 14320 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:16:08,672 job_search 17160 14320 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:16:08,672 job_search 17160 14320 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:16:08,673 job_search 17160 14320 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:16:08,674 job_search 17160 14320 Added 10 Indian jobs
+INFO 2025-12-13 23:16:08,677 job_search 17160 14320 Total unique jobs found: 10
+INFO 2025-12-13 23:16:08,680 views 17160 14320 Found 10 recommended jobs
+WARNING 2025-12-13 23:16:32,857 log 17160 14320 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-12-13 23:27:28,165 job_search 17160 10076 Searching for jobs with skills: java, javascript, react, github, git, django, sql, angular, python in 10
+INFO 2025-12-13 23:27:29,512 job_search 17160 10076 Found 5 jobs from Remotive
+INFO 2025-12-13 23:27:29,517 job_search 17160 10076 Got 5 jobs from Remotive
+INFO 2025-12-13 23:27:30,907 job_search 17160 10076 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:27:30,911 job_search 17160 10076 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:27:30,912 job_search 17160 10076 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:27:30,912 job_search 17160 10076 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:27:30,913 job_search 17160 10076 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:27:30,914 job_search 17160 10076 Added 10 Indian jobs
+INFO 2025-12-13 23:27:30,915 job_search 17160 10076 Total unique jobs found: 10
+INFO 2025-12-13 23:27:30,915 views 17160 10076 Loaded 10 jobs for page display
+INFO 2025-12-13 23:27:35,836 job_search 17160 10076 Searching for jobs with skills: java, javascript, react, github, git, django, sql, angular, python in 10
+INFO 2025-12-13 23:27:37,219 job_search 17160 10076 Found 5 jobs from Remotive
+INFO 2025-12-13 23:27:37,227 job_search 17160 10076 Got 5 jobs from Remotive
+INFO 2025-12-13 23:27:38,340 job_search 17160 10076 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:27:38,343 job_search 17160 10076 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:27:38,344 job_search 17160 10076 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:27:38,345 job_search 17160 10076 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:27:38,346 job_search 17160 10076 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:27:38,347 job_search 17160 10076 Added 10 Indian jobs
+INFO 2025-12-13 23:27:38,348 job_search 17160 10076 Total unique jobs found: 10
+INFO 2025-12-13 23:27:38,349 views 17160 10076 Loaded 10 jobs for page display
+INFO 2025-12-13 23:27:41,655 job_search 17160 10076 Searching for jobs with skills: java, javascript, react, github, git, django, sql, angular, python in 10
+INFO 2025-12-13 23:27:42,728 job_search 17160 10076 Found 5 jobs from Remotive
+INFO 2025-12-13 23:27:42,733 job_search 17160 10076 Got 5 jobs from Remotive
+INFO 2025-12-13 23:27:43,593 job_search 17160 10076 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:27:43,598 job_search 17160 10076 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:27:43,600 job_search 17160 10076 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:27:43,602 job_search 17160 10076 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:27:43,603 job_search 17160 10076 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:27:43,604 job_search 17160 10076 Added 10 Indian jobs
+INFO 2025-12-13 23:27:43,606 job_search 17160 10076 Total unique jobs found: 10
+INFO 2025-12-13 23:27:43,607 views 17160 10076 Loaded 10 jobs for page display
+WARNING 2025-12-13 23:27:44,197 log 17160 3224 Not Found: /favicon.ico
+INFO 2025-12-13 23:28:20,960 job_search 4164 12468 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 23:29:28,681 autoreload 17676 12908 Watching for file changes with StatReloader
+INFO 2025-12-13 23:29:29,686 job_search 17676 12908 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+WARNING 2025-12-13 23:29:41,782 log 17676 13164 Not Found: /favicon.ico
+INFO 2025-12-13 23:30:00,097 views 17676 13164 AI parsing successful
+INFO 2025-12-13 23:30:00,098 views 17676 13164 Final parsed data: name='Atanu Debnath', email='atanudebnath41@gmail.com', phone='+91 9641410649', skills=['sql', 'github', 'python', 'java', 'javascript', 'react', 'django', 'angular', 'git'], skills_count=9
+INFO 2025-12-13 23:30:00,367 views 17676 13164 ATS score calculated: 70
+INFO 2025-12-13 23:30:00,368 views 17676 13164 Fetching jobs for skills: ['sql', 'github', 'python', 'java', 'javascript', 'react', 'django', 'angular', 'git']
+INFO 2025-12-13 23:30:00,368 job_search 17676 13164 Searching for jobs with skills: sql, github, python, java, javascript, react, django, angular, git in 10
+INFO 2025-12-13 23:30:01,452 job_search 17676 13164 Found 5 jobs from Remotive
+INFO 2025-12-13 23:30:01,456 job_search 17676 13164 Got 5 jobs from Remotive
+INFO 2025-12-13 23:30:02,502 job_search 17676 13164 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:30:02,506 job_search 17676 13164 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:30:02,514 job_search 17676 13164 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:30:02,519 job_search 17676 13164 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:30:02,520 job_search 17676 13164 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:30:02,520 job_search 17676 13164 Added 10 Indian jobs
+INFO 2025-12-13 23:30:02,525 job_search 17676 13164 Total unique jobs found: 10
+INFO 2025-12-13 23:30:02,529 views 17676 13164 Fetched 10 recommended jobs
+INFO 2025-12-13 23:30:02,529 views 17676 13164 Sample job: Tech Lead Databricks Data Engineer at Mitre Media
+INFO 2025-12-13 23:30:19,185 job_search 17676 13164 Searching for jobs with skills: sql, github, python, java, javascript, react, django, angular, git in 10
+INFO 2025-12-13 23:30:20,781 job_search 17676 13164 Found 5 jobs from Remotive
+INFO 2025-12-13 23:30:20,783 job_search 17676 13164 Got 5 jobs from Remotive
+INFO 2025-12-13 23:30:21,741 job_search 17676 13164 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:30:21,742 job_search 17676 13164 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:30:21,743 job_search 17676 13164 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:30:21,743 job_search 17676 13164 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:30:21,744 job_search 17676 13164 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:30:21,744 job_search 17676 13164 Added 10 Indian jobs
+INFO 2025-12-13 23:30:21,744 job_search 17676 13164 Total unique jobs found: 10
+INFO 2025-12-13 23:30:21,744 views 17676 13164 Loaded 10 jobs for page display
+INFO 2025-12-13 23:45:30,321 autoreload 16812 9580 Watching for file changes with StatReloader
+INFO 2025-12-13 23:45:31,239 job_search 16812 9580 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 23:45:36,330 job_search 16812 5960 Searching for jobs with skills: sql, github, python, java, javascript, react, django, angular, git in 10
+INFO 2025-12-13 23:45:37,522 job_search 16812 5960 Found 5 jobs from Remotive
+INFO 2025-12-13 23:45:37,525 job_search 16812 5960 Got 5 jobs from Remotive
+INFO 2025-12-13 23:45:38,727 job_search 16812 5960 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:45:38,729 job_search 16812 5960 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:45:38,730 job_search 16812 5960 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:45:38,730 job_search 16812 5960 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:45:38,731 job_search 16812 5960 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:45:38,731 job_search 16812 5960 Added 10 Indian jobs
+INFO 2025-12-13 23:45:38,731 job_search 16812 5960 Total unique jobs found: 10
+INFO 2025-12-13 23:45:38,732 views 16812 5960 Loaded 10 jobs for page display
+INFO 2025-12-13 23:55:31,233 autoreload 5916 3228 Watching for file changes with StatReloader
+INFO 2025-12-13 23:55:32,284 job_search 5916 3228 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-13 23:55:44,531 job_search 5916 11840 Searching for jobs with skills: sql, github, python, java, javascript, react, django, angular, git in 10
+INFO 2025-12-13 23:55:45,383 job_search 5916 11840 Found 5 jobs from Remotive
+INFO 2025-12-13 23:55:45,389 job_search 5916 11840 Got 5 jobs from Remotive
+INFO 2025-12-13 23:55:46,632 job_search 5916 11840 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:55:46,636 job_search 5916 11840 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:55:46,637 job_search 5916 11840 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:55:46,642 job_search 5916 11840 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:55:46,643 job_search 5916 11840 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:55:46,645 job_search 5916 11840 Added 10 Indian jobs
+INFO 2025-12-13 23:55:46,648 job_search 5916 11840 Total unique jobs found: 10
+INFO 2025-12-13 23:55:46,651 views 5916 11840 Loaded 10 jobs for page display
+INFO 2025-12-13 23:56:25,287 views 5916 11840 Job matching request received. JD text length: 23
+INFO 2025-12-13 23:56:25,292 views 5916 11840 Session resume_id: 4
+INFO 2025-12-13 23:56:25,297 views 5916 11840 Resume skills: ['sql', 'github', 'python', 'java', 'javascript', 'react', 'django', 'angular', 'git']
+INFO 2025-12-13 23:56:26,437 views 5916 11840 Job matching complete. Fit score: 0.0
+INFO 2025-12-13 23:56:26,438 views 5916 11840 Experience match: 75% (Resume: 0 years, Required: 0 years)
+INFO 2025-12-13 23:56:26,439 views 5916 11840 Education match: 80% (Resume level: 0, Required level: 0)
+INFO 2025-12-13 23:56:26,441 views 5916 11840 Fetching jobs for skills: ['sql', 'github', 'python', 'java', 'javascript', 'react', 'django', 'angular', 'git']
+INFO 2025-12-13 23:56:26,441 job_search 5916 11840 Searching for jobs with skills: sql, github, python, java, javascript, react, django, angular, git in 10
+INFO 2025-12-13 23:56:27,211 job_search 5916 11840 Found 5 jobs from Remotive
+INFO 2025-12-13 23:56:27,214 job_search 5916 11840 Got 5 jobs from Remotive
+INFO 2025-12-13 23:56:28,229 job_search 5916 11840 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:56:28,233 job_search 5916 11840 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:56:28,241 job_search 5916 11840 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:56:28,242 job_search 5916 11840 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:56:28,245 job_search 5916 11840 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:56:28,247 job_search 5916 11840 Added 10 Indian jobs
+INFO 2025-12-13 23:56:28,248 job_search 5916 11840 Total unique jobs found: 10
+INFO 2025-12-13 23:56:28,249 views 5916 11840 Found 10 recommended jobs
+INFO 2025-12-13 23:57:56,204 views 5916 11840 AI parsing successful
+INFO 2025-12-13 23:57:56,205 views 5916 11840 Final parsed data: name='Atanu Debnath', email='atanudebnath41@gmail.com', phone='+91 9641410649', skills=['git', 'java', 'javascript', 'python', 'github', 'sql', 'angular', 'react', 'django'], skills_count=9
+INFO 2025-12-13 23:57:56,474 views 5916 11840 ATS score calculated: 70
+INFO 2025-12-13 23:57:56,475 views 5916 11840 Fetching jobs for skills: ['git', 'java', 'javascript', 'python', 'github', 'sql', 'angular', 'react', 'django']
+INFO 2025-12-13 23:57:56,476 job_search 5916 11840 Searching for jobs with skills: git, java, javascript, python, github, sql, angular, react, django in 10
+INFO 2025-12-13 23:57:57,296 job_search 5916 11840 Found 5 jobs from Remotive
+INFO 2025-12-13 23:57:57,300 job_search 5916 11840 Got 5 jobs from Remotive
+INFO 2025-12-13 23:57:58,037 job_search 5916 11840 Found 5 jobs from Arbeitnow
+INFO 2025-12-13 23:57:58,040 job_search 5916 11840 Got 5 jobs from Arbeitnow
+INFO 2025-12-13 23:57:58,040 job_search 5916 11840 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-13 23:57:58,041 job_search 5916 11840 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-13 23:57:58,042 job_search 5916 11840 Returning 10 unique jobs after deduplication
+INFO 2025-12-13 23:57:58,042 job_search 5916 11840 Added 10 Indian jobs
+INFO 2025-12-13 23:57:58,049 job_search 5916 11840 Total unique jobs found: 10
+INFO 2025-12-13 23:57:58,052 views 5916 11840 Fetched 10 recommended jobs
+INFO 2025-12-13 23:57:58,055 views 5916 11840 Sample job: Tech Lead Databricks Data Engineer at Mitre Media

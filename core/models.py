@@ -397,3 +397,41 @@ class SkillGapReport(models.Model):
         verbose_name = "Skill Gap Report"
         verbose_name_plural = "Skill Gap Reports"
 
+# ============================================================================
+# LEARNING RESOURCE MODEL
+# ============================================================================
+# Stores learning resources for skills
+
+class LearningResource(models.Model):
+    """Model for storing learning resources for skills"""
+    skill = models.CharField(max_length=100, db_index=True)
+    title = models.CharField(max_length=255)
+    url = models.URLField()
+    resource_type = models.CharField(
+        max_length=50,
+        choices=[
+            ('tutorial', 'Tutorial'),
+            ('course', 'Course'),
+            ('book', 'Book'),
+            ('docs', 'Documentation'),
+            ('video', 'Video'),
+            ('certification', 'Certification'),
+            ('guide', 'Guide')
+        ]
+    )
+    description = models.TextField()
+    duration = models.CharField(max_length=50, help_text="e.g., '10-15 hours'")
+    priority = models.IntegerField(default=0, help_text="Higher priority resources shown first")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-priority', 'skill', 'title']
+        indexes = [
+            models.Index(fields=['skill', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.skill} - {self.title}"
+

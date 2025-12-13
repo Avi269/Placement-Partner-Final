@@ -3,6 +3,87 @@
 
 {% block title %}Upload Resume - Placement Partner{% endblock %}
 
+{% block extra_css %}
+<style>
+/* File Upload Area Styles */
+.file-upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #f8f9fa;
+}
+
+.file-upload-area:hover {
+    border-color: #0d6efd;
+    background: #e7f1ff;
+}
+
+.file-upload-area.dragover {
+    border-color: #0d6efd;
+    background: #cfe2ff;
+    transform: scale(1.02);
+}
+
+.file-list {
+    margin-top: 15px;
+}
+
+.file-item {
+    background: #e9ecef;
+    padding: 10px 15px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.file-item i {
+    margin-right: 10px;
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3rem solid #f3f3f3;
+    border-top: 0.3rem solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+.job-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.job-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.skill-badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    margin: 0.2rem;
+    background: #0d6efd;
+    color: white;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="row justify-content-center">
@@ -10,33 +91,33 @@
             <!-- Page Header -->
             <div class="text-center mb-5">
                 <h1 class="display-5 fw-bold mb-3">Upload Your Resume</h1>
-                <p class="lead text-muted">Let our AI analyze and optimize your resume for better job opportunities</p>
+                <p class="lead text-muted">Let our AI analyze and optimize your resume for better job opportunities
+                </p>
             </div>
 
             <!-- Upload Form -->
             <div class="card shadow-lg">
-                <div class="card-header">
+                <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">
                         <i class="fas fa-upload me-2"></i>Resume Upload & Analysis
                     </h4>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post" enctype="multipart/form-data" data-validate="true" id="resume-form">
+                    <form method="post" enctype="multipart/form-data" id="resume-form">
                         {% csrf_token %}
 
                         <!-- File Upload Area -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Upload Resume File</label>
                             <div class="file-upload-area" id="file-upload-area">
-                                <input type="file" name="resume" id="resume-file" accept=".pdf,.docx,.doc"
-                                    class="d-none">
-                                <div class="drop-text">
+                                <input type="file" name="resume" id="resume-file" accept=".pdf,.docx,.doc" class="d-none">
+                                <div class="drop-text" id="drop-text">
                                     <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
                                     <h5>Drag & Drop your resume here</h5>
                                     <p class="text-muted mb-3">or click to browse files</p>
                                     <p class="small text-muted">Supported formats: PDF, DOCX, DOC (Max 10MB)</p>
                                 </div>
-                                <div class="file-list mt-3"></div>
+                                <div class="file-list" id="file-list"></div>
                             </div>
                         </div>
 
@@ -78,119 +159,132 @@
                                 <i class="fas fa-magic me-2"></i>Analyze & Optimize Resume
                             </button>
                         </div>
+                    </form>
 
-                        <div id="parsed-results" class="mt-5 d-none">
-                            <h5 class="mb-4"><i class="fas fa-check-circle text-success me-2"></i>Resume Analysis Complete!</h5>
+                    <!-- Results Section -->
+                    <div id="parsed-results" class="mt-5 d-none">
+                        <h5 class="mb-4">
+                            <i class="fas fa-check-circle text-success me-2"></i>Resume Analysis Complete!
+                        </h5>
 
-                            <!-- ATS Score Card -->
-                            <div class="card mb-4 border-primary" id="ats-score-card">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>ATS Compatibility Score</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row text-center">
-                                        <div class="col-md-3">
-                                            <div class="mb-2">
-                                                <h2 id="ats-overall-score" class="text-primary mb-0">--</h2>
-                                                <small class="text-muted">Overall</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="mb-2">
-                                                <h2 id="ats-keyword-score" class="mb-0">--</h2>
-                                                <small class="text-muted">Keywords</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="mb-2">
-                                                <h2 id="ats-format-score" class="mb-0">--</h2>
-                                                <small class="text-muted">Format</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="mb-2">
-                                                <h2 id="ats-content-score" class="mb-0">--</h2>
-                                                <small class="text-muted">Content</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <hr>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <h6 class="text-success"><i class="fas fa-check me-2"></i>Strengths</h6>
-                                            <ul id="ats-strengths" class="list-unstyled"></ul>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <h6 class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Areas to Improve</h6>
-                                            <ul id="ats-weaknesses" class="list-unstyled"></ul>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3">
-                                        <h6><i class="fas fa-lightbulb me-2"></i>Improvement Suggestions</h6>
-                                        <ul id="ats-suggestions" class="list-unstyled"></ul>
-                                    </div>
-                                </div>
+                        <!-- ATS Score Card -->
+                        <div class="card mb-4 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-line me-2"></i>ATS Compatibility Score
+                                </h5>
                             </div>
-
-                            <!-- Extracted Data -->
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Extracted Information</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Name</label>
-                                        <input type="text" id="result-name" class="form-control" readonly>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label fw-bold">Email</label>
-                                            <input type="email" id="result-email" class="form-control" readonly>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label fw-bold">Phone</label>
-                                            <input type="text" id="result-phone" class="form-control" readonly>
+                            <div class="card-body">
+                                <div class="row text-center mb-3">
+                                    <div class="col-md-3">
+                                        <div class="mb-2">
+                                            <h2 id="ats-overall-score" class="text-primary mb-0">--</h2>
+                                            <small class="text-muted">Overall</small>
                                         </div>
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Extracted Skills (<span id="skill-count">0</span>)</label>
-                                        <div id="result-skills" class="d-flex flex-wrap gap-2"></div>
+                                    <div class="col-md-3">
+                                        <div class="mb-2">
+                                            <h2 id="ats-keyword-score" class="mb-0">--</h2>
+                                            <small class="text-muted">Keywords</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-2">
+                                            <h2 id="ats-format-score" class="mb-0">--</h2>
+                                            <small class="text-muted">Format</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-2">
+                                            <h2 id="ats-content-score" class="mb-0">--</h2>
+                                            <small class="text-muted">Content</small>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Recommended Jobs -->
-                            <div class="card mb-4 border-success" id="recommended-jobs-card" style="display:none;">
-                                <div class="card-header bg-success text-white">
-                                    <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Recommended Jobs Based on Your Skills</h5>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Info Note -->
-                                    <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        <small><strong>How Job Links Work:</strong> Each job card shows a role from a top company. 
-                                        Clicking the link opens a LinkedIn Jobs search page pre-filtered for that specific role and company in India, showing relevant current openings.</small>
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-success">
+                                            <i class="fas fa-check me-2"></i>Strengths
+                                        </h6>
+                                        <ul id="ats-strengths" class="list-unstyled"></ul>
                                     </div>
-                                    <div id="jobs-list"></div>
-                                    <div id="no-jobs-message" class="text-center text-muted" style="display:none;">
-                                        <i class="fas fa-info-circle fa-2x mb-2"></i>
-                                        <p>No jobs found at the moment. Try updating your skills or check back later!</p>
+                                    <div class="col-md-6">
+                                        <h6 class="text-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>Areas to Improve
+                                        </h6>
+                                        <ul id="ats-weaknesses" class="list-unstyled"></ul>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="text-center mt-4">
-                                <a href="{% url 'job_matching' %}" class="btn btn-success btn-lg me-2">
-                                    <i class="fas fa-search me-2"></i>Advanced Job Matching
-                                </a>
-                                <a href="{% url 'cover_letter' %}" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-envelope me-2"></i>Generate Cover Letter
-                                </a>
+                                <div class="mt-3">
+                                    <h6><i class="fas fa-lightbulb me-2"></i>Improvement Suggestions</h6>
+                                    <ul id="ats-suggestions" class="list-unstyled"></ul>
+                                </div>
                             </div>
                         </div>
 
-                    </form>
+                        <!-- Extracted Data -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-user me-2"></i>Extracted Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Name</label>
+                                    <input type="text" id="result-name" class="form-control" readonly>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Email</label>
+                                        <input type="email" id="result-email" class="form-control" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Phone</label>
+                                        <input type="text" id="result-phone" class="form-control" readonly>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        Extracted Skills (<span id="skill-count">0</span>)
+                                    </label>
+                                    <div id="result-skills" class="d-flex flex-wrap gap-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recommended Jobs -->
+                        <div class="card mb-4 border-success" id="recommended-jobs-card" style="display:none;">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-briefcase me-2"></i>Recommended Jobs Based on Your Skills
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>How Job Links Work:</strong> Each job card shows a role from a top company. 
+                                    Clicking the link opens a LinkedIn Jobs search page pre-filtered for that specific role and company.
+                                </div>
+                                <div id="jobs-list"></div>
+                                <div id="no-jobs-message" class="text-center text-muted py-4" style="display:none;">
+                                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                    <p>No jobs found at the moment. Try updating your skills or check back later!</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="text-center mt-4">
+                            <a href="{% url 'job_matching' %}" class="btn btn-success btn-lg me-2">
+                                <i class="fas fa-search me-2"></i>Advanced Job Matching
+                            </a>
+                            <a href="{% url 'cover_letter' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-envelope me-2"></i>Generate Cover Letter
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -203,8 +297,8 @@
                             <i class="fas fa-brain text-white fa-lg"></i>
                         </div>
                         <h5>AI-Powered Parsing</h5>
-                        <p class="text-muted small">Advanced AI extracts skills, experience, and education from your
-                            resume</p>
+                        <p class="text-muted small">Advanced AI extracts skills, experience, and education from your resume
+                        </p>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -241,7 +335,8 @@
                 <h5>Processing Your Resume</h5>
                 <p class="text-muted">Our AI is analyzing your resume and extracting key information...</p>
                 <div class="progress">
-                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%"></div>
                 </div>
             </div>
         </div>
@@ -251,256 +346,386 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('resume-form');
-        const fileInput = document.getElementById('resume-file');
-        const textArea = document.getElementById('resume-text');
-        const processingModal = new bootstrap.Modal(document.getElementById('processingModal'));
+// ============================================================================
+// PLACEMENTPARTNER UTILITY OBJECT
+// ============================================================================
+const PlacementPartner = {
+    showAlert: function(type, message, duration = 5000) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.container');
+        const firstChild = container.firstElementChild;
+        container.insertBefore(alertDiv, firstChild);
+        
+        // Scroll to alert
+        alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        // Auto-dismiss
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 150);
+        }, duration);
+    },
+    
+    formatSalary: function(min, max) {
+        if (!min || !max) return 'Not specified';
+        
+        // Convert to lakhs if in thousands
+        const minLakhs = min >= 100000 ? (min / 100000).toFixed(1) : (min / 1000).toFixed(0);
+        const maxLakhs = max >= 100000 ? (max / 100000).toFixed(1) : (max / 1000).toFixed(0);
+        
+        if (min >= 100000) {
+            return `₹${minLakhs} - ${maxLakhs} LPA`;
+        } else {
+            return `₹${minLakhs}k - ${maxLakhs}k per month`;
+        }
+    }
+};
 
-        // Form submission
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
+// ============================================================================
+// FILE UPLOAD HANDLERS
+// ============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('resume-form');
+    const fileInput = document.getElementById('resume-file');
+    const textArea = document.getElementById('resume-text');
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const fileList = document.getElementById('file-list');
+    const dropText = document.getElementById('drop-text');
+    const processingModal = new bootstrap.Modal(document.getElementById('processingModal'));
 
-            // Validate form
-            if (!validateResumeForm()) {
+    // Click to upload
+    fileUploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    // Drag and drop
+    fileUploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.add('dragover');
+    });
+
+    fileUploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+    });
+
+    fileUploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            displaySelectedFile(files[0]);
+            textArea.value = ''; // Clear text area
+        }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            displaySelectedFile(e.target.files[0]);
+            textArea.value = ''; // Clear text area
+        }
+    });
+
+    // Text area input
+    textArea.addEventListener('input', function(e) {
+        if (e.target.value.trim()) {
+            fileInput.value = ''; // Clear file input
+            fileList.innerHTML = ''; // Clear file display
+            dropText.style.display = 'block';
+        }
+    });
+
+    function displaySelectedFile(file) {
+        dropText.style.display = 'none';
+        fileList.innerHTML = `
+            <div class="file-item">
+                <div class="d-flex align-items-center flex-grow-1">
+                    <i class="fas fa-file-pdf text-danger fa-2x"></i>
+                    <div class="ms-3">
+                        <p class="mb-0 fw-bold">${file.name}</p>
+                        <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearFile()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    window.clearFile = function() {
+        fileInput.value = '';
+        fileList.innerHTML = '';
+        dropText.style.display = 'block';
+    };
+
+    // ============================================================================
+    // FORM SUBMISSION
+    // ============================================================================
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Validate
+        if (!validateResumeForm()) {
+            return false;
+        }
+
+        // Show modal
+        processingModal.show();
+
+        // Animate progress
+        const progressBar = document.querySelector('#processingModal .progress-bar');
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress >= 95) {
+                progress = 95;
+                clearInterval(interval);
+            }
+            progressBar.style.width = progress + '%';
+        }, 300);
+
+        // Submit form
+        const formData = new FormData(form);
+
+        fetch('{% url "resume_upload" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            clearInterval(interval);
+            progressBar.style.width = '100%';
+
+            setTimeout(() => {
+                processingModal.hide();
+
+                if (data.success && data.data) {
+                    PlacementPartner.showAlert('success', 'Resume uploaded and analyzed successfully!');
+
+                    // Show warning if any
+                    if (data.warning) {
+                        PlacementPartner.showAlert('warning', data.warning, 8000);
+                    }
+
+                    displayResults(data);
+                } else {
+                    PlacementPartner.showAlert('danger', data.message || 'An error occurred. Please try again.');
+                }
+            }, 1000);
+        })
+        .catch(error => {
+            clearInterval(interval);
+            processingModal.hide();
+            console.error('Error:', error);
+            PlacementPartner.showAlert('danger', 'An error occurred while processing your resume.');
+        });
+    });
+
+    function validateResumeForm() {
+        // Check if either file or text provided
+        if (!fileInput.files.length && !textArea.value.trim()) {
+            PlacementPartner.showAlert('warning', 'Please upload a resume file or paste resume text.');
+            return false;
+        }
+
+        // Validate file if selected
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const maxSize = 10 * 1024 * 1024; // 10MB
+
+            if (file.size > maxSize) {
+                PlacementPartner.showAlert('danger', 'File size must be less than 10MB.');
                 return false;
             }
 
-            // Show processing modal
-            processingModal.show();
-
-            // Simulate progress
-            const progressBar = document.querySelector('#processingModal .progress-bar');
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 15;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                }
-                progressBar.style.width = progress + '%';
-            }, 200);
-
-            // Submit form
-            const formData = new FormData(form);
-
-            fetch('{% url "resume_upload" %}', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Response received:', data); // Debug log
-                    
-                    clearInterval(interval);
-                    progressBar.style.width = '100%';
-
-                    setTimeout(() => {
-                        processingModal.hide();
-
-                        if (data.success && data.data) {
-                            console.log('Parsed data:', data.data); // Debug log
-                            console.log('ATS analysis:', data.ats_analysis); // Debug log
-                            console.log('Recommended jobs:', data.recommended_jobs); // Debug log
-                            
-                            PlacementPartner.showAlert('success', 'Resume uploaded and analyzed successfully!');
-
-                            // Show warning if AI extraction had issues
-                            if (data.warning) {
-                                PlacementPartner.showAlert('warning', data.warning, 8000);
-                            }
-
-                            const d = data.data;
-
-                            // Show parsed data
-                            document.getElementById('parsed-results').classList.remove('d-none');
-                            document.getElementById('result-name').value = d.name || '';
-                            document.getElementById('result-email').value = d.email || '';
-                            document.getElementById('result-phone').value = d.phone || '';
-                            
-                            // Also populate the form input fields with extracted data
-                            if (d.name) document.getElementById('name').value = d.name;
-                            if (d.email) document.getElementById('email').value = d.email;
-                            if (d.phone) document.getElementById('phone').value = d.phone;
-
-                            const skillsEl = document.getElementById('result-skills');
-                            skillsEl.innerHTML = '';
-                            const skills = d.skills || [];
-                            document.getElementById('skill-count').textContent = skills.length;
-                            skills.forEach(skill => {
-                                const badge = document.createElement('span');
-                                badge.className = 'badge bg-primary me-1 mb-1';
-                                badge.textContent = skill;
-                                skillsEl.appendChild(badge);
-                            });
-
-                            // Display ATS Score
-                            if (data.ats_analysis) {
-                                const ats = data.ats_analysis;
-                                document.getElementById('ats-overall-score').textContent = ats.ats_score || '--';
-                                document.getElementById('ats-keyword-score').textContent = ats.keyword_match || '--';
-                                document.getElementById('ats-format-score').textContent = ats.format_score || '--';
-                                document.getElementById('ats-content-score').textContent = ats.content_score || '--';
-
-                                // Set color based on score
-                                const overallEl = document.getElementById('ats-overall-score');
-                                const score = parseInt(ats.ats_score) || 0;
-                                if (score >= 80) {
-                                    overallEl.className = 'text-success mb-0';
-                                } else if (score >= 60) {
-                                    overallEl.className = 'text-warning mb-0';
-                                } else {
-                                    overallEl.className = 'text-danger mb-0';
-                                }
-
-                                // Display strengths
-                                const strengthsEl = document.getElementById('ats-strengths');
-                                strengthsEl.innerHTML = '';
-                                (ats.strengths || []).forEach(strength => {
-                                    const li = document.createElement('li');
-                                    li.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i>${strength}`;
-                                    strengthsEl.appendChild(li);
-                                });
-
-                                // Display weaknesses
-                                const weaknessesEl = document.getElementById('ats-weaknesses');
-                                weaknessesEl.innerHTML = '';
-                                (ats.weaknesses || []).forEach(weakness => {
-                                    const li = document.createElement('li');
-                                    li.innerHTML = `<i class="fas fa-times-circle text-warning me-2"></i>${weakness}`;
-                                    weaknessesEl.appendChild(li);
-                                });
-
-                                // Display suggestions
-                                const suggestionsEl = document.getElementById('ats-suggestions');
-                                suggestionsEl.innerHTML = '';
-                                (ats.suggestions || []).forEach(suggestion => {
-                                    const li = document.createElement('li');
-                                    li.innerHTML = `<i class="fas fa-arrow-right text-primary me-2"></i>${suggestion}`;
-                                    li.className = 'mb-2';
-                                    suggestionsEl.appendChild(li);
-                                });
-                            }
-
-                            // Display Recommended Jobs
-                            console.log('Jobs data:', data.recommended_jobs); // Debug
-                            console.log('Jobs count:', data.recommended_jobs ? data.recommended_jobs.length : 0); // Debug
-                            
-                            if (data.recommended_jobs && data.recommended_jobs.length > 0) {
-                                const jobsCard = document.getElementById('recommended-jobs-card');
-                                const jobsList = document.getElementById('jobs-list');
-                                const noJobsMsg = document.getElementById('no-jobs-message');
-                                
-                                console.log('Displaying jobs card'); // Debug
-                                jobsCard.style.display = 'block';
-                                noJobsMsg.style.display = 'none';
-                                jobsList.innerHTML = '';
-
-                                data.recommended_jobs.forEach((job, index) => {
-                                    console.log(`Job ${index + 1}:`, job.title, job.company); // Debug
-                                    const jobCard = document.createElement('div');
-                                    jobCard.className = 'card mb-3 border-0 shadow-sm';
-                                    jobCard.innerHTML = `
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <h6 class="card-title mb-1">${job.title || 'Untitled Position'}</h6>
-                                                    <p class="text-muted small mb-2">
-                                                        <i class="fas fa-building me-1"></i>${job.company || 'Company Not Specified'} 
-                                                        <i class="fas fa-map-marker-alt ms-2 me-1"></i>${job.location || 'Location Not Specified'}
-                                                    </p>
-                                                    <p class="card-text small">${(job.description || 'No description available').substring(0, 150)}...</p>
-                                                    ${job.salary_min ? `<p class="text-success small mb-2"><i class="fas fa-dollar-sign me-1"></i>$${job.salary_min} - $${job.salary_max}</p>` : ''}
-                                                </div>
-                                                <span class="badge bg-info">${job.source}</span>
-                                            </div>
-                                            <a href="${job.url}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-external-link-alt me-1"></i>View Job
-                                            </a>
-                                        </div>
-                                    `;
-                                    jobsList.appendChild(jobCard);
-                                });
-                                
-                                console.log(`Successfully displayed ${data.recommended_jobs.length} jobs`); // Debug
-                            } else {
-                                console.log('No jobs to display - showing message'); // Debug
-                                const jobsCard = document.getElementById('recommended-jobs-card');
-                                if (jobsCard) {
-                                    jobsCard.style.display = 'block';
-                                    document.getElementById('no-jobs-message').style.display = 'block';
-                                    document.getElementById('jobs-list').innerHTML = '';
-                                }
-                            }
-                            
-                            console.log('Results displayed successfully'); // Debug log
-
-                            // Optional: scroll to result
-                            document.getElementById('parsed-results').scrollIntoView({ behavior: 'smooth' });
-
-                        } else {
-                            console.error('Error in response:', data); // Debug log
-                            PlacementPartner.showAlert('danger', data.message || 'An error occurred. Please try again.');
-                        }
-
-                    }, 1000);
-                })
-                .catch(error => {
-                    clearInterval(interval);
-                    processingModal.hide();
-                    console.error('Fetch error:', error); // Debug log
-                    PlacementPartner.showAlert('danger', 'An error occurred while processing your resume. Please check the console for details.');
-                });
-        });
-
-        // File input change
-        fileInput.addEventListener('change', function (e) {
-            if (e.target.files.length > 0) {
-                // Clear text area when file is selected
-                textArea.value = '';
+            const allowedTypes = [
+                'application/pdf',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/msword'
+            ];
+            
+            if (!allowedTypes.includes(file.type)) {
+                PlacementPartner.showAlert('danger', 'Please upload a PDF, DOCX, or DOC file.');
+                return false;
             }
-        });
-
-        // Text area input
-        textArea.addEventListener('input', function (e) {
-            if (e.target.value.trim()) {
-                // Clear file input when text is entered
-                fileInput.value = '';
-            }
-        });
-
-        function validateResumeForm() {
-            let isValid = true;
-
-            // Check if either file or text is provided
-            if (!fileInput.files.length && !textArea.value.trim()) {
-                PlacementPartner.showAlert('warning', 'Please upload a resume file or paste resume text.');
-                isValid = false;
-            }
-
-            // Validate file size if file is selected
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const maxSize = 10 * 1024 * 1024; // 10MB
-
-                if (file.size > maxSize) {
-                    PlacementPartner.showAlert('danger', 'File size must be less than 10MB.');
-                    isValid = false;
-                }
-
-                // Validate file type
-                const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
-                if (!allowedTypes.includes(file.type)) {
-                    PlacementPartner.showAlert('danger', 'Please upload a PDF, DOCX, or DOC file.');
-                    isValid = false;
-                }
-            }
-
-            return isValid;
         }
-    });
+
+        return true;
+    }
+
+    // ============================================================================
+    // DISPLAY RESULTS
+    // ============================================================================
+    function displayResults(data) {
+        const d = data.data;
+
+        // Show results section
+        document.getElementById('parsed-results').classList.remove('d-none');
+
+        // Personal info
+        document.getElementById('result-name').value = d.name || 'Not extracted';
+        document.getElementById('result-email').value = d.email || 'Not extracted';
+        document.getElementById('result-phone').value = d.phone || 'Not extracted';
+
+        // Populate form fields
+        if (d.name) document.getElementById('name').value = d.name;
+        if (d.email) document.getElementById('email').value = d.email;
+        if (d.phone) document.getElementById('phone').value = d.phone;
+
+        // Skills
+        const skillsEl = document.getElementById('result-skills');
+        skillsEl.innerHTML = '';
+        const skills = d.skills || [];
+        document.getElementById('skill-count').textContent = skills.length;
+        
+        if (skills.length > 0) {
+            skills.forEach(skill => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-primary';
+                badge.textContent = skill;
+                skillsEl.appendChild(badge);
+            });
+        } else {
+            skillsEl.innerHTML = '<span class="text-muted">No skills extracted</span>';
+        }
+
+        // ATS Score
+        if (data.ats_analysis) {
+            displayATSScore(data.ats_analysis);
+        }
+
+        // Jobs
+        if (data.recommended_jobs && data.recommended_jobs.length > 0) {
+            displayJobs(data.recommended_jobs);
+        } else {
+            const jobsCard = document.getElementById('recommended-jobs-card');
+            jobsCard.style.display = 'block';
+            document.getElementById('no-jobs-message').style.display = 'block';
+            document.getElementById('jobs-list').innerHTML = '';
+        }
+
+        // Scroll to results
+        setTimeout(() => {
+            document.getElementById('parsed-results').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 300);
+    }
+
+    function displayATSScore(ats) {
+        document.getElementById('ats-overall-score').textContent = ats.ats_score || '--';
+        document.getElementById('ats-keyword-score').textContent = ats.keyword_match || '--';
+        document.getElementById('ats-format-score').textContent = ats.format_score || '--';
+        document.getElementById('ats-content-score').textContent = ats.content_score || '--';
+
+        // Set color
+        const overallEl = document.getElementById('ats-overall-score');
+        const score = parseInt(ats.ats_score) || 0;
+        
+        overallEl.className = 'mb-0 ' + (
+            score >= 80 ? 'text-success' :
+            score >= 60 ? 'text-warning' :
+            'text-danger'
+        );
+
+        // Strengths
+        const strengthsEl = document.getElementById('ats-strengths');
+        strengthsEl.innerHTML = '';
+        (ats.strengths || []).forEach(strength => {
+            const li = document.createElement('li');
+            li.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i>${strength}`;
+            li.className = 'mb-2';
+            strengthsEl.appendChild(li);
+        });
+
+        // Weaknesses
+        const weaknessesEl = document.getElementById('ats-weaknesses');
+        weaknessesEl.innerHTML = '';
+        (ats.weaknesses || []).forEach(weakness => {
+            const li = document.createElement('li');
+            li.innerHTML = `<i class="fas fa-times-circle text-warning me-2"></i>${weakness}`;
+            li.className = 'mb-2';
+            weaknessesEl.appendChild(li);
+        });
+
+        // Suggestions
+        const suggestionsEl = document.getElementById('ats-suggestions');
+        suggestionsEl.innerHTML = '';
+        (ats.suggestions || []).forEach(suggestion => {
+            const li = document.createElement('li');
+            li.innerHTML = `<i class="fas fa-arrow-right text-primary me-2"></i>${suggestion}`;
+            li.className = 'mb-2';
+            suggestionsEl.appendChild(li);
+        });
+    }
+
+    function displayJobs(jobs) {
+        const jobsCard = document.getElementById('recommended-jobs-card');
+        const jobsList = document.getElementById('jobs-list');
+        const noJobsMsg = document.getElementById('no-jobs-message');
+
+        jobsCard.style.display = 'block';
+        noJobsMsg.style.display = 'none';
+        jobsList.innerHTML = '';
+
+        jobs.forEach(job => {
+            const card = document.createElement('div');
+            card.className = 'card mb-3 job-card border-start border-success border-4';
+            
+            // Format salary
+            const salaryText = (job.salary_min && job.salary_max) 
+                ? PlacementPartner.formatSalary(job.salary_min, job.salary_max)
+                : '';
+
+            card.innerHTML = `
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title mb-1">${job.title || 'Untitled Position'}</h6>
+                            <p class="text-muted small mb-2">
+                                <i class="fas fa-building me-1"></i>${job.company || 'Company'}
+                                ${job.location ? `<span class="mx-2">•</span><i class="fas fa-map-marker-alt me-1"></i>${job.location}` : ''}
+                            </p>
+                            ${salaryText ? `<p class="text-success small mb-2"><i class="fas fa-rupee-sign me-1"></i>${salaryText}</p>` : ''}
+                        </div>
+                        <span class="badge bg-info">${job.source || 'Job Board'}</span>
+                    </div>
+                    
+                    ${job.description ? `<p class="card-text small mb-3">${job.description.substring(0, 150)}...</p>` : ''}
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        ${job.skills && job.skills.length > 0 ? `
+                            <div class="d-flex flex-wrap gap-1">
+                                ${job.skills.slice(0, 5).map(skill => 
+                                    `<span class="badge bg-light text-dark">${skill}</span>`
+                                ).join('')}
+                            </div>
+                        ` : '<div></div>'}
+                        
+                        <a href="${job.url || '#'}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Job
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            jobsList.appendChild(card);
+        });
+    }
+});
 </script>
 {% endblock %}

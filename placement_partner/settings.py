@@ -73,7 +73,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "core",
-    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -122,10 +121,6 @@ DATABASES = {
 if os.getenv('DATABASE_URL'):
     import dj_database_url
     DATABASES['default'] = dj_database_url.parse(os.getenv('DATABASE_URL'))
-
-
-# AUTH_USER
-AUTH_USER_MODEL = 'accounts.CustomUser'
 
 
 # Password validation
@@ -258,4 +253,16 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+# Gemini AI Configuration
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+
+# Cache Configuration (for AI-generated resources)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'placement-partner-cache',
+        'TIMEOUT': 3600,  # 1 hour
+    }
 }

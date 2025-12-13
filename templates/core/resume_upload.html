@@ -165,6 +165,13 @@
                                     <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Recommended Jobs Based on Your Skills</h5>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Info Note -->
+                                    <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <small><strong>How Job Links Work:</strong> Each job card shows a role from a top company. 
+                                        Clicking the link opens a LinkedIn Jobs search page pre-filtered for that specific role and company in India, showing relevant current openings.</small>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
                                     <div id="jobs-list"></div>
                                     <div id="no-jobs-message" class="text-center text-muted" style="display:none;">
                                         <i class="fas fa-info-circle fa-2x mb-2"></i>
@@ -301,6 +308,11 @@
                             
                             PlacementPartner.showAlert('success', 'Resume uploaded and analyzed successfully!');
 
+                            // Show warning if AI extraction had issues
+                            if (data.warning) {
+                                PlacementPartner.showAlert('warning', data.warning, 8000);
+                            }
+
                             const d = data.data;
 
                             // Show parsed data
@@ -374,28 +386,33 @@
                             }
 
                             // Display Recommended Jobs
+                            console.log('Jobs data:', data.recommended_jobs); // Debug
+                            console.log('Jobs count:', data.recommended_jobs ? data.recommended_jobs.length : 0); // Debug
+                            
                             if (data.recommended_jobs && data.recommended_jobs.length > 0) {
                                 const jobsCard = document.getElementById('recommended-jobs-card');
                                 const jobsList = document.getElementById('jobs-list');
                                 const noJobsMsg = document.getElementById('no-jobs-message');
                                 
+                                console.log('Displaying jobs card'); // Debug
                                 jobsCard.style.display = 'block';
                                 noJobsMsg.style.display = 'none';
                                 jobsList.innerHTML = '';
 
-                                data.recommended_jobs.forEach(job => {
+                                data.recommended_jobs.forEach((job, index) => {
+                                    console.log(`Job ${index + 1}:`, job.title, job.company); // Debug
                                     const jobCard = document.createElement('div');
                                     jobCard.className = 'card mb-3 border-0 shadow-sm';
                                     jobCard.innerHTML = `
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div>
-                                                    <h6 class="card-title mb-1">${job.title}</h6>
+                                                    <h6 class="card-title mb-1">${job.title || 'Untitled Position'}</h6>
                                                     <p class="text-muted small mb-2">
-                                                        <i class="fas fa-building me-1"></i>${job.company} 
-                                                        <i class="fas fa-map-marker-alt ms-2 me-1"></i>${job.location}
+                                                        <i class="fas fa-building me-1"></i>${job.company || 'Company Not Specified'} 
+                                                        <i class="fas fa-map-marker-alt ms-2 me-1"></i>${job.location || 'Location Not Specified'}
                                                     </p>
-                                                    <p class="card-text small">${job.description.substring(0, 150)}...</p>
+                                                    <p class="card-text small">${(job.description || 'No description available').substring(0, 150)}...</p>
                                                     ${job.salary_min ? `<p class="text-success small mb-2"><i class="fas fa-dollar-sign me-1"></i>$${job.salary_min} - $${job.salary_max}</p>` : ''}
                                                 </div>
                                                 <span class="badge bg-info">${job.source}</span>
@@ -407,10 +424,16 @@
                                     `;
                                     jobsList.appendChild(jobCard);
                                 });
+                                
+                                console.log(`Successfully displayed ${data.recommended_jobs.length} jobs`); // Debug
                             } else {
-                                document.getElementById('recommended-jobs-card').style.display = 'block';
-                                document.getElementById('no-jobs-message').style.display = 'block';
-                                document.getElementById('jobs-list').innerHTML = '';
+                                console.log('No jobs to display - showing message'); // Debug
+                                const jobsCard = document.getElementById('recommended-jobs-card');
+                                if (jobsCard) {
+                                    jobsCard.style.display = 'block';
+                                    document.getElementById('no-jobs-message').style.display = 'block';
+                                    document.getElementById('jobs-list').innerHTML = '';
+                                }
                             }
                             
                             console.log('Results displayed successfully'); // Debug log

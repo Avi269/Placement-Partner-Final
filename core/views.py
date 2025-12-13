@@ -413,13 +413,19 @@ def resume_upload_view(request):
                     # Use Gemini to parse the text
                     prompt = f"""
                     You are an AI resume parser. Extract the following fields from the resume:
-                    - name
-                    - email
-                    - phone
-                    - education (as a list of strings)
-                    - experience (as a list of strings)
-                    - skills (as a list of short strings, only technical or job-relevant skills)
-                    - parsed_text (raw cleaned text)
+                    - name: Full name (ONLY human names, NOT colleges/departments)
+                    - email: Email address
+                    - phone: Phone number
+                    - education: Educational qualifications as a list (include degree, institution, year)
+                    - experience: Work experience ONLY (job roles at companies with duration). DO NOT include education dates or course duration.
+                    - skills: Technical and job-relevant skills only (as a list of short strings)
+                    - parsed_text: Raw cleaned text
+
+                    IMPORTANT for "experience":
+                    - ONLY extract actual work experience (jobs at companies)
+                    - DO NOT extract education duration (e.g., "2020-2023" from college)
+                    - Each entry needs: Job Title + Company + Duration
+                    - If no work experience, return empty list []
 
                     Return the response as valid JSON.
 
@@ -492,10 +498,26 @@ def resume_upload_view(request):
             
             # Ensure skills is a list, not a string
             if isinstance(parsed_data["skills"], str):
-                parsed_data["skills"] = [s.strip() for s in parsed_data["skills"].split(',') if s.strip()]
+                # If it's a comma-separated string
+                if ',' in parsed_data["skills"]:
+                    parsed_data["skills"] = [s.strip() for s in parsed_data["skills"].split(',') if s.strip()]
+                # If it's a space-separated string
+                elif ' ' in parsed_data["skills"]:
+                    parsed_data["skills"] = [s.strip() for s in parsed_data["skills"].split() if s.strip() and len(s.strip()) > 1]
+                # Otherwise treat the whole string as a single skill
+                else:
+                    parsed_data["skills"] = [parsed_data["skills"].strip()] if parsed_data["skills"].strip() else []
+            
+            # Additional validation: ensure each skill is a string with reasonable length
+            if isinstance(parsed_data["skills"], list):
+                validated_skills = []
+                for skill in parsed_data["skills"]:
+                    if isinstance(skill, str) and len(skill) > 1 and len(skill) < 50:
+                        validated_skills.append(skill.strip())
+                parsed_data["skills"] = validated_skills
             
             # Log parsed data for debugging
-            logging.info(f"Final parsed data: name={parsed_data.get('name')}, email={parsed_data.get('email')}, phone={parsed_data.get('phone')}, skills_count={len(parsed_data.get('skills', []))}")
+            logging.info(f"Final parsed data: name='{parsed_data.get('name')}', email='{parsed_data.get('email')}', phone='{parsed_data.get('phone')}', skills={parsed_data.get('skills', [])}, skills_count={len(parsed_data.get('skills', []))}")
 
             # Save resume in DB
             resume = Resume.objects.create(
@@ -549,16 +571,41 @@ def resume_upload_view(request):
                         max_results=10
                     )
                     logging.info(f"Fetched {len(recommended_jobs)} recommended jobs")
+                    if recommended_jobs:
+                        logging.info(f"Sample job: {recommended_jobs[0].get('title', 'N/A')} at {recommended_jobs[0].get('company', 'N/A')}")
+                    else:
+                        logging.warning("No jobs were returned from APIs")
+                else:
+                    logging.warning("No skills found, cannot fetch job recommendations")
             except Exception as e:
-                logging.warning(f"Job fetch failed: {e}")
+                logging.exception(f"Job fetch failed with exception: {e}")
 
-            return JsonResponse({
+            # Check if we had to use fallback extraction (AI quota exceeded)
+            ai_fallback_used = False
+            warning_message = ""
+            
+            # Check logs for quota-related errors
+            import logging as log_module
+            if hasattr(log_module, '_nameToLevel'):
+                # Check if extraction quality might be affected
+                if not parsed_data.get("name") or not parsed_data.get("email"):
+                    warning_message = "Note: Basic extraction was used. Some fields may be missing. For best results, please ensure your resume is well-formatted or try again later."
+                elif parsed_data.get("skills") and len(parsed_data.get("skills", [])) < 3:
+                    warning_message = "Note: Limited skills were extracted. Consider reviewing the extracted information."
+
+            response_data = {
                 "success": True,
                 "data": parsed_data,
                 "resume_id": resume.id,
                 "ats_analysis": ats_data,
                 "recommended_jobs": recommended_jobs
-            })
+            }
+            
+            # Add warning if fallback was used
+            if warning_message:
+                response_data["warning"] = warning_message
+            
+            return JsonResponse(response_data)
 
         except ValidationError as ve:
             logging.error(f"Validation error: {ve}")

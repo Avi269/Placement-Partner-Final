@@ -1,29 +1,39 @@
 """
 ============================================================================
-JOB SEARCH API INTEGRATION
+JOB SEARCH API INTEGRATION - 100% DYNAMIC
 ============================================================================
-This module fetches real-time job postings from multiple sources based on
+This module fetches REAL-TIME job postings from multiple live APIs based on
 user skills extracted from resumes.
 
 Features:
-- Curated Indian tech jobs database with real company listings
-- Multiple job sources (Naukri, LinkedIn, company career pages)
-- Skill-based job matching
-- Salary information in INR
-- Working application links
+- NO hardcoded jobs - everything fetched dynamically
+- Multiple free job APIs (no API key needed for most)
+- Intelligent deduplication and relevance sorting
+- Automatic failover between APIs
 
-Job Sources:
-1. Curated Indian Jobs: Hand-picked real job listings from top companies
-   - Wipro, TCS, Infosys, Flipkart, Amazon India, Swiggy, Zomato, etc.
-   - Includes salary ranges, required skills, and direct application links
+Job API Sources (All Dynamic):
+1. Remotive API (FREE, no key needed)
+   - Real-time remote tech jobs
+   
+2. Arbeitnow API (FREE, no key needed)
+   - European and international jobs
+   
+3. Adzuna API (Optional): Free tier 1000 calls/month
+   - India-specific jobs
+   - Set: ADZUNA_APP_ID, ADZUNA_API_KEY in .env
 
-2. Adzuna API (Optional): Free tier provides 1000 API calls/month
-   - Can be configured with your API key
-   - Aggregates jobs from multiple sources
+4. Jooble API (Optional): Free tier 500 requests
+   - Global job search
+   - Set: JOOBLE_API_KEY in .env
+
+5. JSearch/RapidAPI (Optional): 150 requests/month
+   - Aggregates Indeed, LinkedIn, Glassdoor
+   - Set: RAPIDAPI_KEY in .env
 
 Usage:
     api = JobSearchAPI()
-    jobs = api.fetch_jobs(skills=['python', 'django'], location='Bangalore')
+    jobs = api.search_indian_jobs(skills=['python', 'django'])
+    # Returns live jobs from multiple APIs
 ============================================================================
 """
 
@@ -47,259 +57,189 @@ class JobSearchAPI:
     """
     
     def __init__(self):
-        """Initialize job search API with credentials and data sources"""
+        """Initialize job search API with credentials from environment variables"""
+        import os
         
-        # === ADZUNA API CREDENTIALS (Optional) ===
+        # === ADZUNA API CREDENTIALS ===
         # Get free API key from: https://developer.adzuna.com/
         # Free tier: 1000 API calls per month
-        self.adzuna_app_id = "test"  # Replace with your Adzuna app_id
-        self.adzuna_api_key = "test"  # Replace with your Adzuna API key
+        # Set in .env: ADZUNA_APP_ID and ADZUNA_API_KEY
+        self.adzuna_app_id = os.getenv("ADZUNA_APP_ID", "")
+        self.adzuna_api_key = os.getenv("ADZUNA_API_KEY", "")
         
-        # === CURATED INDIAN JOBS DATABASE ===
-        # Load hand-picked real job listings from top Indian companies
-        self.indian_jobs = self._get_indian_tech_jobs()
+        # === RAPIDAPI JSEARCH (Multi-source aggregator) ===
+        # Aggregates from Indeed, LinkedIn, Glassdoor, ZipRecruiter
+        # Sign up: https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch
+        # Free tier: 150 requests/month
+        # Set in .env: RAPIDAPI_KEY
+        self.rapidapi_key = os.getenv("RAPIDAPI_KEY", "")
+        self.rapidapi_host = "jsearch.p.rapidapi.com"
+        
+        # === THE MUSE API ===
+        # Free job postings, no API key required
+        # Docs: https://www.themuse.com/developers/api/v2
+        # No rate limit on free tier
+        
+        # === JOOBLE API ===
+        # Free tier: 500 requests (contact for increase)
+        # Sign up: https://jooble.org/api/about
+        # Set in .env: JOOBLE_API_KEY
+        self.jooble_api_key = os.getenv("JOOBLE_API_KEY", "")
+        
+        logger.info("JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs")
     
-    def _get_indian_tech_jobs(self) -> List[Dict]:
-        """Curated list of real Indian tech jobs with working links"""
-        return [
-            {
-                "title": "Python Django Developer",
-                "company": "Wipro",
-                "location": "Bangalore, India",
-                "description": "We are looking for an experienced Python Django developer to join our team. Must have 2-5 years of experience in Django, REST APIs, PostgreSQL, and Docker. Work on enterprise applications for global clients.",
-                "url": "https://www.naukri.com/python-django-developer-jobs-in-bangalore?k=python%20django%20developer&l=bangalore&experience=2",
-                "salary_min": 600000,
-                "salary_max": 1200000,
-                "source": "Indian Jobs",
-                "skills": ["python", "django", "rest", "api", "postgresql", "docker"]
-            },
-            {
-                "title": "Full Stack Developer (MERN)",
-                "company": "TCS",
-                "location": "Hyderabad, India",
-                "description": "Seeking MERN Stack developer with MongoDB, Express, React, and Node.js expertise. Build scalable web applications for banking and finance sector. 3+ years experience required.",
-                "url": "https://www.naukri.com/mern-stack-developer-jobs-in-hyderabad?k=mern%20stack&l=hyderabad&experience=3",
-                "salary_min": 700000,
-                "salary_max": 1500000,
-                "source": "Indian Jobs",
-                "skills": ["mongodb", "express", "react", "node.js", "javascript", "html", "css"]
-            },
-            {
-                "title": "Senior Java Spring Boot Developer",
-                "company": "Infosys",
-                "location": "Pune, India",
-                "description": "Join Infosys as a Java Spring Boot developer. Work on microservices architecture, AWS cloud deployment, and CI/CD pipelines. 4+ years experience in Java and Spring framework required.",
-                "url": "https://www.naukri.com/java-spring-boot-jobs-in-pune?k=java%20spring%20boot&l=pune&experience=4",
-                "salary_min": 800000,
-                "salary_max": 1800000,
-                "source": "Indian Jobs",
-                "skills": ["java", "spring", "microservices", "aws", "docker", "kubernetes", "ci/cd"]
-            },
-            {
-                "title": "DevOps Engineer",
-                "company": "Flipkart",
-                "location": "Bangalore, India",
-                "description": "Flipkart is hiring DevOps engineers to manage our cloud infrastructure. Experience with AWS, Docker, Kubernetes, Jenkins, and Terraform required. Help scale India's largest e-commerce platform.",
-                "url": "https://www.naukri.com/devops-engineer-jobs-in-bangalore?k=devops%20engineer&l=bangalore&experience=3",
-                "salary_min": 1000000,
-                "salary_max": 2000000,
-                "source": "Indian Jobs",
-                "skills": ["devops", "aws", "docker", "kubernetes", "jenkins", "terraform", "linux"]
-            },
-            {
-                "title": "React Frontend Developer",
-                "company": "Amazon India",
-                "location": "Bangalore, India",
-                "description": "Build next-generation e-commerce experiences at Amazon India. Strong React.js, Redux, TypeScript skills needed. Work on high-traffic consumer-facing applications.",
-                "url": "https://www.linkedin.com/jobs/search/?keywords=react%20frontend%20developer&location=Bangalore%2C%20India",
-                "salary_min": 1200000,
-                "salary_max": 2500000,
-                "source": "Indian Jobs",
-                "skills": ["react", "javascript", "typescript", "redux", "html", "css", "webpack"]
-            },
-            {
-                "title": "Data Scientist",
-                "company": "Swiggy",
-                "location": "Bangalore, India",
-                "description": "Swiggy is looking for Data Scientists to work on recommendation systems, demand forecasting, and ML models. Python, pandas, scikit-learn, TensorFlow experience required.",
-                "url": "https://www.naukri.com/data-scientist-jobs-in-bangalore?k=data%20scientist&l=bangalore&experience=3",
-                "salary_min": 1000000,
-                "salary_max": 2200000,
-                "source": "Indian Jobs",
-                "skills": ["python", "machine learning", "pandas", "scikit-learn", "tensorflow", "sql"]
-            },
-            {
-                "title": "Backend Developer (Node.js)",
-                "company": "Zomato",
-                "location": "Gurugram, India",
-                "description": "Join Zomato's backend team to build scalable APIs and microservices. Node.js, MongoDB, Redis, and AWS experience required. Work on food-tech innovations.",
-                "url": "https://www.naukri.com/nodejs-developer-jobs-in-gurgaon?k=nodejs%20developer&l=gurgaon&experience=3",
-                "salary_min": 900000,
-                "salary_max": 1800000,
-                "source": "Indian Jobs",
-                "skills": ["node.js", "javascript", "mongodb", "redis", "aws", "rest", "api"]
-            },
-            {
-                "title": "Angular Developer",
-                "company": "Tech Mahindra",
-                "location": "Noida, India",
-                "description": "Tech Mahindra seeks Angular developers for enterprise web applications. Experience with Angular 12+, TypeScript, RxJS, and REST APIs required. Work on telecom and healthcare projects.",
-                "url": "https://www.naukri.com/angular-developer-jobs-in-noida?k=angular%20developer&l=noida&experience=3",
-                "salary_min": 600000,
-                "salary_max": 1300000,
-                "source": "Indian Jobs",
-                "skills": ["angular", "typescript", "javascript", "html", "css", "rest", "api"]
-            },
-            {
-                "title": "Machine Learning Engineer",
-                "company": "PhonePe",
-                "location": "Bangalore, India",
-                "description": "PhonePe is hiring ML Engineers to build fraud detection and recommendation systems. Python, TensorFlow, PyTorch, and ML deployment experience needed.",
-                "url": "https://www.linkedin.com/jobs/search/?keywords=machine%20learning%20engineer&location=Bangalore%2C%20India",
-                "salary_min": 1500000,
-                "salary_max": 3000000,
-                "source": "Indian Jobs",
-                "skills": ["python", "machine learning", "tensorflow", "pytorch", "deep learning", "ai"]
-            },
-            {
-                "title": "Cloud Engineer (Azure)",
-                "company": "Microsoft India",
-                "location": "Hyderabad, India",
-                "description": "Microsoft India is looking for Cloud Engineers to work on Azure services. Experience with Azure, ARM templates, PowerShell, and DevOps practices required.",
-                "url": "https://www.linkedin.com/jobs/search/?keywords=azure%20cloud%20engineer&location=Hyderabad%2C%20India",
-                "salary_min": 1500000,
-                "salary_max": 2800000,
-                "source": "Indian Jobs",
-                "skills": ["azure", "cloud", "devops", "powershell", "kubernetes", "docker"]
-            },
-            {
-                "title": "Software Engineer (Python)",
-                "company": "Paytm",
-                "location": "Noida, India",
-                "description": "Paytm seeks Python developers for fintech applications. Experience with Python, Django/Flask, PostgreSQL, and payment gateway integration required.",
-                "url": "https://www.naukri.com/python-developer-jobs-in-noida?k=python%20developer&l=noida&experience=2",
-                "salary_min": 800000,
-                "salary_max": 1600000,
-                "source": "Indian Jobs",
-                "skills": ["python", "django", "flask", "postgresql", "rest", "api"]
-            },
-            {
-                "title": "iOS Developer (Swift)",
-                "company": "Ola Cabs",
-                "location": "Bangalore, India",
-                "description": "Ola is hiring iOS developers to build world-class mobile experiences. Swift, SwiftUI, and iOS SDK expertise required. Work on ride-sharing innovations.",
-                "url": "https://www.naukri.com/ios-developer-jobs-in-bangalore?k=ios%20developer&l=bangalore&experience=3",
-                "salary_min": 1000000,
-                "salary_max": 2000000,
-                "source": "Indian Jobs",
-                "skills": ["swift", "ios", "mobile", "xcode", "rest", "api"]
-            },
-            {
-                "title": "Android Developer (Kotlin)",
-                "company": "CRED",
-                "location": "Bangalore, India",
-                "description": "CRED is looking for Android developers with Kotlin expertise. Build premium fintech experiences. Experience with Jetpack Compose and MVVM architecture preferred.",
-                "url": "https://www.naukri.com/android-developer-jobs-in-bangalore?k=android%20kotlin&l=bangalore&experience=3",
-                "salary_min": 1200000,
-                "salary_max": 2500000,
-                "source": "Indian Jobs",
-                "skills": ["android", "kotlin", "java", "mobile", "rest", "api"]
-            },
-            {
-                "title": "QA Automation Engineer",
-                "company": "Accenture",
-                "location": "Chennai, India",
-                "description": "Accenture seeks QA Automation engineers with Selenium, TestNG, and CI/CD experience. Work on test automation for enterprise clients.",
-                "url": "https://www.naukri.com/qa-automation-jobs-in-chennai?k=qa%20automation&l=chennai&experience=2",
-                "salary_min": 500000,
-                "salary_max": 1100000,
-                "source": "Indian Jobs",
-                "skills": ["selenium", "testing", "java", "python", "jenkins", "ci/cd"]
-            },
-            {
-                "title": "UI/UX Designer & Frontend Developer",
-                "company": "Razorpay",
-                "location": "Bangalore, India",
-                "description": "Razorpay is hiring UI/UX designers who can code. Figma, React, and design system experience required. Build beautiful fintech interfaces.",
-                "url": "https://www.naukri.com/frontend-developer-jobs-in-bangalore?k=react%20frontend&l=bangalore&experience=2",
-                "salary_min": 900000,
-                "salary_max": 1800000,
-                "source": "Indian Jobs",
-                "skills": ["react", "html", "css", "javascript", "figma", "ui", "ux"]
-            }
-        ]
-    
-    def search_indian_jobs(self, skills: List[str], max_results: int = 10) -> List[Dict]:
-        """Search from curated Indian tech jobs"""
+    def search_indian_jobs(self, skills: List[str], location: str = "India", max_results: int = 15) -> List[Dict]:
+        """
+        Search for jobs in India using multiple APIs dynamically
+        NO hardcoded jobs - all fetched from live APIs
+        """
         try:
-            skills_lower = set([s.lower().strip() for s in skills if s])
+            all_jobs = []
             
-            # Define generic skills that shouldn't be primary match factors
-            generic_skills = {'html', 'css', 'javascript', 'git', 'rest', 'api', 'rest api'}
+            # Validate skills input
+            if not skills or not isinstance(skills, list) or len(skills) == 0:
+                logger.warning("No skills provided for job search")
+                return []
             
-            # Separate generic and specialized skills
-            specialized_skills = skills_lower - generic_skills
+            # Try multiple APIs to get diverse results
+            logger.info(f"Searching for jobs with skills: {', '.join(skills)} in {location}")
             
-            matched_jobs = []
+            # 1. Try Remotive (Free, no API key) - with timeout
+            try:
+                remotive_jobs = self.search_jobs_remotive(skills, max_results=5)
+                if remotive_jobs:
+                    all_jobs.extend(remotive_jobs)
+                    logger.info(f"Got {len(remotive_jobs)} jobs from Remotive")
+                else:
+                    logger.info("No jobs found from Remotive")
+            except requests.Timeout:
+                logger.error("Remotive API timeout - taking too long to respond")
+            except requests.RequestException as e:
+                logger.error(f"Remotive API connection error: {e}")
+            except Exception as e:
+                logger.error(f"Remotive API failed: {e}")
             
-            for job in self.indian_jobs:
-                job_skills = set([s.lower() for s in job.get("skills", [])])
-                job_title = job["title"].lower()
-                job_desc = job["description"].lower()
-                
-                # Check skill matches with priority for specialized skills
-                specialized_matches = len(specialized_skills.intersection(job_skills))
-                generic_matches = len(generic_skills.intersection(job_skills))
-                
-                # Total skill matching count with higher weight for specialized skills
-                weighted_skill_score = (specialized_matches * 2.0) + (generic_matches * 0.3)
-                
-                # Also check title and description
-                title_matches = sum(1 for skill in skills_lower if skill in job_title)
-                desc_matches = sum(1 for skill in skills_lower if skill in job_desc)
-                
-                total_match_score = weighted_skill_score + (title_matches * 0.5) + (desc_matches * 0.3)
-                
-                # Require at least 2 specialized skill matches for strong relevance
-                # OR 1 specialized + 3 generic + strong title/desc match
-                if specialized_matches >= 2 or (specialized_matches >= 1 and generic_matches >= 2 and total_match_score >= 3.0):
-                    matched_jobs.append((total_match_score, job))
+            # 2. Try Arbeitnow (Free, no API key)
+            try:
+                arbeitnow_jobs = self.search_jobs_github(skills, location, max_results=5)
+                if arbeitnow_jobs:
+                    all_jobs.extend(arbeitnow_jobs)
+                    logger.info(f"Got {len(arbeitnow_jobs)} jobs from Arbeitnow")
+                else:
+                    logger.info("No jobs found from Arbeitnow")
+            except requests.Timeout:
+                logger.error("Arbeitnow API timeout")
+            except requests.RequestException as e:
+                logger.error(f"Arbeitnow API connection error: {e}")
+            except Exception as e:
+                logger.error(f"Arbeitnow API failed: {e}")
             
-            # Sort by match score (descending)
-            matched_jobs.sort(key=lambda x: x[0], reverse=True)
-            
-            # Return top matches without score
-            result = [job for score, job in matched_jobs[:max_results]]
-            
-            # Log matching details for debugging
-            if result:
-                logger.info(f"Found {len(result)} Indian jobs matching skills: {', '.join(skills)}")
-                for score, job in matched_jobs[:5]:  # Log top 5 matches
-                    logger.info(f"  - {job['title']} at {job['company']}: match score {score:.1f}")
+            # 3. Try Adzuna if configured
+            if self.adzuna_app_id and self.adzuna_api_key:
+                try:
+                    adzuna_jobs = self.search_jobs_adzuna(skills, "in", max_results=5)
+                    if adzuna_jobs:
+                        all_jobs.extend(adzuna_jobs)
+                        logger.info(f"Got {len(adzuna_jobs)} jobs from Adzuna")
+                    else:
+                        logger.info("No jobs found from Adzuna")
+                except requests.Timeout:
+                    logger.error("Adzuna API timeout")
+                except requests.RequestException as e:
+                    logger.error(f"Adzuna API connection error: {e}")
+                except Exception as e:
+                    logger.error(f"Adzuna API failed: {e}")
             else:
-                logger.warning(f"No Indian jobs matched skills: {', '.join(skills)}")
+                logger.info("Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)")
+            
+            # 4. Try Jooble if configured
+            if self.jooble_api_key:
+                try:
+                    jooble_jobs = self.search_jobs_jooble(skills, location, max_results=5)
+                    if jooble_jobs:
+                        all_jobs.extend(jooble_jobs)
+                        logger.info(f"Got {len(jooble_jobs)} jobs from Jooble")
+                    else:
+                        logger.info("No jobs found from Jooble")
+                except requests.Timeout:
+                    logger.error("Jooble API timeout")
+                except requests.RequestException as e:
+                    logger.error(f"Jooble API connection error: {e}")
+                except Exception as e:
+                    logger.error(f"Jooble API failed: {e}")
+            else:
+                logger.info("Jooble API not configured (set JOOBLE_API_KEY in .env)")
+            
+            # If no jobs found, log helpful message
+            if not all_jobs:
+                logger.warning(f"No jobs found for skills: {', '.join(skills)}")
+                logger.info("Try: 1) Broadening your skills, 2) Configuring more API keys, 3) Checking your internet connection")
+                return []
+            
+            # Remove duplicates based on title + company
+            seen = set()
+            unique_jobs = []
+            for job in all_jobs:
+                key = f"{job.get('title', '').lower()}_{job.get('company', '').lower()}"
+                if key not in seen:
+                    seen.add(key)
+                    unique_jobs.append(job)
+            
+            # Sort by relevance with INDIA PRIORITY
+            skills_lower = set([s.lower() for s in skills])
+            
+            def calc_relevance(job):
+                title = job.get('title', '').lower()
+                desc = job.get('description', '').lower()
+                company = job.get('company', '').lower()
+                location = job.get('location', '').lower()
+                combined = f"{title} {desc} {company}"
+                
+                # Base score: skill matches
+                skill_score = sum(1 for skill in skills_lower if skill in combined)
+                
+                # INDIA PRIORITY: Add 100 points for India jobs
+                india_bonus = 0
+                if any(india_term in location for india_term in ['india', 'indian', 'mumbai', 'delhi', 'bangalore', 'bengaluru', 'hyderabad', 'chennai', 'pune', 'kolkata']):
+                    india_bonus = 100
+                
+                # REMOTE jobs that allow India: Add 50 points
+                elif 'remote' in location or 'worldwide' in location:
+                    india_bonus = 50
+                
+                return skill_score + india_bonus
+            
+            unique_jobs.sort(key=calc_relevance, reverse=True)
+            
+            result = unique_jobs[:max_results]
+            logger.info(f"Returning {len(result)} unique jobs after deduplication")
             
             return result
             
         except Exception as e:
-            logger.error(f"Error searching Indian jobs: {e}")
+            logger.error(f"Error in search_indian_jobs: {e}")
             return []
-        
+    
     def search_jobs_adzuna(self, skills: List[str], location: str = "in", max_results: int = 10) -> List[Dict]:
         """
         Search jobs using Adzuna API (FREE)
         Sign up: https://developer.adzuna.com/
+        INDIA-FOCUSED: location="in" searches India-specific jobs
         """
         try:
-            # Build search query from skills
-            query = " OR ".join(skills[:5])  # Use top 5 skills
+            # Build search query from technical skills only
+            very_generic = {'api', 'rest', 'css', 'html', 'git', 'github'}
+            technical_skills = [s for s in skills if s.lower() not in very_generic]
+            query = " OR ".join(technical_skills[:5])  # Use top 5 technical skills
             
-            url = f"https://api.adzuna.com/v1/api/jobs/{location}/search/1"
+            # Force India location
+            url = f"https://api.adzuna.com/v1/api/jobs/in/search/1"  # 'in' = India
             params = {
                 "app_id": self.adzuna_app_id,
                 "app_key": self.adzuna_api_key,
                 "results_per_page": max_results,
                 "what": query,
+                "where": "India",  # Explicitly search in India
                 "content-type": "application/json"
             }
             
@@ -338,37 +278,58 @@ class JobSearchAPI:
         """
         try:
             url = "https://remotive.com/api/remote-jobs"
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=15)  # Increased timeout
             
             if response.status_code == 200:
                 data = response.json()
                 all_jobs = data.get("jobs", [])
                 
-                # Filter jobs by skills with stricter matching
-                matched_jobs = []
-                skills_lower = [s.lower() for s in skills]
+                if not all_jobs:
+                    logger.warning("Remotive API returned no jobs")
+                    return []
                 
-                # Generic skills that need support from specialized skills
-                generic_skills = {'html', 'css', 'javascript', 'git', 'rest', 'api', 'rest api'}
-                specialized_skills = [s for s in skills_lower if s not in generic_skills]
+                # Filter jobs by skills with VERY strict matching
+                matched_jobs = []
+                skills_lower = [s.lower() for s in skills if s]  # Filter empty skills
+                
+                # Define truly generic terms that appear in almost any job
+                very_generic = {'api', 'rest', 'css', 'html', 'git', 'github'}
+                # Core technical skills that indicate specific roles
+                technical_skills = [s for s in skills_lower if s not in very_generic]
+                
+                if not technical_skills:
+                    logger.warning("Only generic skills provided, results may be broad")
+                    technical_skills = skills_lower  # Use all skills if none are technical
                 
                 for job in all_jobs:
                     job_title = job.get("title", "").lower()
                     job_desc = job.get("description", "").lower()
                     job_tags = " ".join(job.get("tags", [])).lower()
+                    job_location = job.get("candidate_required_location", "")
                     
-                    # Count matches for specialized vs generic skills
-                    specialized_matches = sum(1 for skill in specialized_skills 
-                                             if skill in job_title or skill in job_tags or skill in job_desc)
-                    generic_matches = sum(1 for skill in generic_skills 
-                                         if skill in skills_lower and (skill in job_title or skill in job_tags))
+                    # STRICT: Require at least 1 technical skill match in title OR 2 in description
+                    title_matches = sum(1 for skill in technical_skills if skill in job_title)
+                    desc_matches = sum(1 for skill in technical_skills if skill in job_desc)
+                    tag_matches = sum(1 for skill in technical_skills if skill in job_tags)
                     
-                    # Require at least 1 specialized skill match or 2+ generic skills in title
-                    if specialized_matches >= 1 or generic_matches >= 2:
+                    # Must have strong technical skill match - not just generic terms
+                    if title_matches >= 1 or desc_matches >= 2 or tag_matches >= 2:
+                        # Check if job is available for India
+                        location_text = f"{job_location} {job_desc}".lower()
+                        is_india_friendly = (
+                            'india' in location_text or 
+                            'worldwide' in location_text or 
+                            'anywhere' in location_text or
+                            not job_location  # No location restriction
+                        )
+                        
+                        # Prefer India-friendly jobs
+                        display_location = "Remote (India)" if is_india_friendly else "Remote"
+                        
                         matched_jobs.append({
                             "title": job.get("title", ""),
                             "company": job.get("company_name", "Unknown"),
-                            "location": "Remote",
+                            "location": display_location,
                             "description": job.get("description", "")[:500],
                             "url": job.get("url", ""),
                             "salary_min": None,
@@ -382,9 +343,15 @@ class JobSearchAPI:
                 logger.info(f"Found {len(matched_jobs)} jobs from Remotive")
                 return matched_jobs
             else:
-                logger.error(f"Remotive API error: {response.status_code}")
+                logger.error(f"Remotive API error: {response.status_code} - {response.text[:200]}")
                 return []
                 
+        except requests.Timeout:
+            logger.error("Remotive API request timed out")
+            return []
+        except requests.RequestException as e:
+            logger.error(f"Remotive API network error: {e}")
+            return []
         except Exception as e:
             logger.error(f"Error fetching from Remotive: {e}")
             return []
@@ -406,27 +373,40 @@ class JobSearchAPI:
                 matched_jobs = []
                 skills_lower = [s.lower() for s in skills]
                 
-                # Generic skills that need support from specialized skills
-                generic_skills = {'html', 'css', 'javascript', 'git', 'rest', 'api', 'rest api'}
-                specialized_skills = [s for s in skills_lower if s not in generic_skills]
+                # Define very generic terms
+                very_generic = {'html', 'css', 'javascript', 'git', 'rest', 'api', 'rest api'}
+                technical_skills = [s for s in skills_lower if s not in very_generic]
                 
                 for job in all_jobs:
                     job_title = job.get("title", "").lower()
                     job_desc = job.get("description", "").lower()
                     job_tags = " ".join(job.get("tags", [])).lower()
+                    job_location = job.get("location", "Remote")
                     
-                    # Count matches for specialized vs generic skills
-                    specialized_matches = sum(1 for skill in specialized_skills 
-                                             if skill in job_title or skill in job_tags or skill in job_desc)
-                    generic_matches = sum(1 for skill in generic_skills 
-                                         if skill in skills_lower and (skill in job_title or skill in job_tags))
+                    # Count technical skill matches
+                    tech_matches = sum(1 for skill in technical_skills 
+                                      if skill in job_title or skill in job_desc or skill in job_tags)
                     
-                    # Require at least 1 specialized skill match or 2+ generic skills in title
-                    if specialized_matches >= 1 or generic_matches >= 2:
+                    # Require at least 1 technical skill match
+                    if tech_matches >= 1:
+                        location_lower = job_location.lower()
+                        
+                        # Prioritize India jobs
+                        is_india = any(term in location_lower for term in 
+                                      ['india', 'mumbai', 'delhi', 'bangalore', 'bengaluru', 'hyderabad', 'chennai', 'pune'])
+                        
+                        # Label remote jobs
+                        if is_india:
+                            display_loc = job_location
+                        elif 'remote' in location_lower:
+                            display_loc = f"{job_location} (India-friendly)"
+                        else:
+                            display_loc = job_location
+                        
                         matched_jobs.append({
                             "title": job.get("title", ""),
                             "company": job.get("company_name", "Unknown"),
-                            "location": job.get("location", "Remote"),
+                            "location": display_loc,
                             "description": job.get("description", "")[:500],
                             "url": job.get("url", ""),
                             "salary_min": None,
@@ -445,6 +425,194 @@ class JobSearchAPI:
                 
         except Exception as e:
             logger.error(f"Error fetching from Arbeitnow: {e}")
+            return []
+    
+    def search_jobs_jsearch(self, skills: List[str], location: str = "in", max_results: int = 10) -> List[Dict]:
+        """
+        Search jobs using JSearch API via RapidAPI (Aggregates Indeed, LinkedIn, Glassdoor, ZipRecruiter)
+        Sign up: https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch
+        Free tier: 150 requests/month
+        """
+        try:
+            # Check if API key is configured
+            if self.rapidapi_key == "PASTE_YOUR_RAPIDAPI_KEY_HERE":
+                logger.info("JSearch API key not configured, skipping")
+                return []
+            
+            # Build search query
+            query = " ".join(skills[:3])  # Use top 3 skills
+            
+            # Map location codes
+            location_map = {
+                "in": "India",
+                "us": "United States",
+                "uk": "United Kingdom"
+            }
+            location_name = location_map.get(location, "India")
+            
+            url = "https://jsearch.p.rapidapi.com/search"
+            headers = {
+                "X-RapidAPI-Key": self.rapidapi_key,
+                "X-RapidAPI-Host": self.rapidapi_host
+            }
+            params = {
+                "query": f"{query} in {location_name}",
+                "page": "1",
+                "num_pages": "1",
+                "date_posted": "all"
+            }
+            
+            response = requests.get(url, headers=headers, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                jobs_data = data.get("data", [])
+                
+                jobs = []
+                for job in jobs_data[:max_results]:
+                    jobs.append({
+                        "title": job.get("job_title", ""),
+                        "company": job.get("employer_name", "Unknown"),
+                        "location": job.get("job_city", location_name),
+                        "description": job.get("job_description", "")[:500],
+                        "url": job.get("job_apply_link", job.get("job_google_link", "")),
+                        "salary_min": job.get("job_min_salary"),
+                        "salary_max": job.get("job_max_salary"),
+                        "source": "JSearch (Indeed/LinkedIn/Glassdoor)"
+                    })
+                
+                logger.info(f"Found {len(jobs)} jobs from JSearch")
+                return jobs
+            else:
+                logger.error(f"JSearch API error: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error fetching from JSearch: {e}")
+            return []
+    
+    def search_jobs_themuse(self, skills: List[str], max_results: int = 10) -> List[Dict]:
+        """
+        Search jobs using The Muse API (FREE, no API key needed!)
+        Docs: https://www.themuse.com/developers/api/v2
+        Focus: Remote-friendly and company culture
+        """
+        try:
+            url = "https://www.themuse.com/api/public/jobs"
+            
+            # Build query from skills
+            query = " ".join(skills[:3])
+            
+            params = {
+                "page": 0,
+                "descending": "true",
+                "api_key": "public"  # Public access
+            }
+            
+            response = requests.get(url, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                all_jobs = data.get("results", [])
+                
+                # Filter by skills
+                matched_jobs = []
+                skills_lower = [s.lower() for s in skills]
+                
+                for job in all_jobs:
+                    job_title = job.get("name", "").lower()
+                    job_categories = " ".join([cat.get("name", "") for cat in job.get("categories", [])]).lower()
+                    job_levels = " ".join([level.get("name", "") for level in job.get("levels", [])]).lower()
+                    
+                    # Check for skill matches
+                    match_count = sum(1 for skill in skills_lower 
+                                     if skill in job_title or skill in job_categories or skill in job_levels)
+                    
+                    if match_count > 0:
+                        company = job.get("company", {})
+                        locations = job.get("locations", [])
+                        location_str = locations[0].get("name", "Remote") if locations else "Remote"
+                        
+                        matched_jobs.append({
+                            "title": job.get("name", ""),
+                            "company": company.get("name", "Unknown"),
+                            "location": location_str,
+                            "description": job.get("contents", "")[:500],
+                            "url": job.get("refs", {}).get("landing_page", ""),
+                            "salary_min": None,
+                            "salary_max": None,
+                            "source": "The Muse"
+                        })
+                        
+                        if len(matched_jobs) >= max_results:
+                            break
+                
+                logger.info(f"Found {len(matched_jobs)} jobs from The Muse")
+                return matched_jobs
+            else:
+                logger.error(f"The Muse API error: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error fetching from The Muse: {e}")
+            return []
+    
+    def search_jobs_jooble(self, skills: List[str], location: str = "in", max_results: int = 10) -> List[Dict]:
+        """
+        Search jobs using Jooble API (India support)
+        Sign up: https://jooble.org/api/about
+        Free tier: 1000 requests/day
+        """
+        try:
+            # Check if API key is configured
+            if self.jooble_api_key == "PASTE_YOUR_JOOBLE_KEY_HERE":
+                logger.info("Jooble API key not configured, skipping")
+                return []
+            
+            # Build search query
+            keywords = " ".join(skills[:5])
+            
+            # Location mapping for Jooble
+            location_map = {
+                "in": "India",
+                "us": "USA",
+                "uk": "UK"
+            }
+            location_name = location_map.get(location, "India")
+            
+            url = f"https://jooble.org/api/{self.jooble_api_key}"
+            payload = {
+                "keywords": keywords,
+                "location": location_name
+            }
+            
+            response = requests.post(url, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                jobs_data = data.get("jobs", [])
+                
+                jobs = []
+                for job in jobs_data[:max_results]:
+                    jobs.append({
+                        "title": job.get("title", ""),
+                        "company": job.get("company", "Unknown"),
+                        "location": job.get("location", location_name),
+                        "description": job.get("snippet", "")[:500],
+                        "url": job.get("link", ""),
+                        "salary_min": None,
+                        "salary_max": None,
+                        "source": "Jooble"
+                    })
+                
+                logger.info(f"Found {len(jobs)} jobs from Jooble")
+                return jobs
+            else:
+                logger.error(f"Jooble API error: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error fetching from Jooble: {e}")
             return []
     
     def search_all_sources(self, skills: List[str], location: str = "in", max_results: int = 20) -> List[Dict]:
@@ -490,6 +658,30 @@ class JobSearchAPI:
                     all_jobs.extend(arbeitnow_jobs)
                 except Exception as e:
                     logger.error(f"Error fetching from Arbeitnow: {e}")
+            
+            # Try JSearch (RapidAPI) - Multi-source aggregator
+            if len(all_jobs) < 5:
+                try:
+                    jsearch_jobs = self.search_jobs_jsearch(skills, location, min(remaining, 3))
+                    all_jobs.extend(jsearch_jobs)
+                except Exception as e:
+                    logger.error(f"Error fetching from JSearch: {e}")
+            
+            # Try The Muse API (no key needed)
+            if len(all_jobs) < 5:
+                try:
+                    muse_jobs = self.search_jobs_themuse(skills, min(remaining, 3))
+                    all_jobs.extend(muse_jobs)
+                except Exception as e:
+                    logger.error(f"Error fetching from The Muse: {e}")
+            
+            # Try Jooble (India support)
+            if len(all_jobs) < 5 and location in ["in", "india"]:
+                try:
+                    jooble_jobs = self.search_jobs_jooble(skills, location, min(remaining, 3))
+                    all_jobs.extend(jooble_jobs)
+                except Exception as e:
+                    logger.error(f"Error fetching from Jooble: {e}")
         
         # Remove duplicates by URL
         seen_urls = set()

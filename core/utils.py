@@ -71,7 +71,10 @@ if not API_KEY:
 
 # Configure Gemini with API key
 genai.configure(api_key=API_KEY)
-GEMINI_MODEL = "gemini-2.0-flash"  # Model for fast, high-quality responses
+# Model name can be configured via environment variable
+# Default: gemini-2.0-flash (fast, high-quality responses)
+# Other options: gemini-1.5-pro, gemini-1.5-flash
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 # === FILE VALIDATION CONFIGURATION ===
 # Try to import python-magic for secure file type detection
@@ -619,7 +622,10 @@ def get_learning_resources_with_gemini(missing_skills: List[str]) -> List[Dict]:
     
 
 def extract_text_from_file(file_path: str) -> str:
-    """Extract text from PDF, DOCX, DOC, or TXT files. Use OCR for scanned PDFs."""
+    """
+    Extract text from PDF, DOCX, DOC, or TXT files with multiple fallback strategies.
+    Uses multiple libraries and OCR for maximum extraction success.
+    """
     # Handle file path or file object
     if hasattr(file_path, 'path'):
         # Django UploadedFile object
@@ -632,7 +638,34 @@ def extract_text_from_file(file_path: str) -> str:
     
     try:
         if ext == 'pdf':
-            text = extract_text(file_path)
+            # Strategy 1: Try pdfminer (best for most PDFs)
+            try:
+                text = extract_text(file_path)
+                if text and len(text.strip()) > 20:
+                    logger.info(f"pdfminer extracted {len(text)} characters successfully")
+            except Exception as pdfminer_error:
+                logger.warning(f"pdfminer extraction failed: {pdfminer_error}")
+                text = ""
+            
+            # Strategy 2: If pdfminer fails, try PyPDF2
+            if not text.strip():
+                try:
+                    import PyPDF2
+                    with open(file_path, 'rb') as pdf_file:
+                        pdf_reader = PyPDF2.PdfReader(pdf_file)
+                        text = ''
+                        for page in pdf_reader.pages:
+                            page_text = page.extract_text()
+                            if page_text:
+                                text += page_text + '\n'
+                        if text.strip():
+                            logger.info(f"PyPDF2 extracted {len(text)} characters successfully")
+                except ImportError:
+                    logger.error("PyPDF2 not installed. Install with: pip install PyPDF2")
+                except Exception as pypdf_error:
+                    logger.warning(f"PyPDF2 extraction failed: {pypdf_error}")
+            
+            # Strategy 3: If still no text, try OCR
             if not text.strip():
                 # Check if Tesseract is available before attempting OCR
                 tesseract_available = True
@@ -691,25 +724,44 @@ def extract_text_from_file(file_path: str) -> str:
 
 def parse_resume_file(file_path):
     text = extract_text_from_file(file_path) or ""
+    
+    # Check if text was extracted successfully
+    if not text or len(text.strip()) < 20:
+        raise ValidationError("Could not extract sufficient text from the resume file. Please ensure the file is not corrupted or password-protected.")
 
     prompt = f"""
     You are an AI resume parser. Extract the following fields from the resume:
-    - name
-    - email
-    - phone
-    - education (as a list of strings)
-    - experience (as a list of strings)
-    - skills (as a list of short strings, only technical or job-relevant skills)
-    - parsed_text (raw cleaned text)
+    - name: The person's full name (ONLY human names, NOT departments/majors/colleges)
+    - email: Email address
+    - phone: Phone number
+    - education: Educational qualifications as a list (include degree, institution, year)
+    - experience: Work experience as a list (include company, role, duration). DO NOT include education dates or course durations.
+    - skills: Technical and job-relevant skills only (NOT soft skills or generic phrases)
+    - parsed_text: Raw cleaned text
+
+    CRITICAL RULES for "name" field:
+    - Extract ONLY the person's actual name (e.g., "John Doe", "Habib Parvej", "Sarah Smith")
+    - DO NOT extract: university names, college names, department names (like "Computer Science", "CSE", "ECE")
+    - DO NOT extract: job titles, company names, degrees (like "B.Tech", "M.Tech")
+    - DO NOT extract: headings like "Resume", "CV", "Curriculum Vitae"
+    - The name should be 2-4 words maximum and look like a human name
+    - If you cannot find a clear person name, leave it empty
+
+    CRITICAL RULES for "experience" field:
+    - ONLY extract actual work experience (job roles at companies)
+    - DO NOT extract education duration/course duration (e.g., "2020-2023" from college)
+    - Each entry should have: Job Title + Company Name + Duration
+    - Example: "Software Engineer at Google, 2022-2024"
+    - If no work experience found, return empty list []
 
     Return the response as valid JSON like this:
     {{
-      "name": "...",
-      "email": "...",
-      "phone": "...",
-      "education": ["..."],
-      "experience": ["..."],
-      "skills": ["..."],
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "education": ["B.Tech in Computer Science, XYZ University, 2020-2024"],
+      "experience": ["Software Engineer at ABC Corp, 2024-Present"],
+      "skills": ["Python", "Django", "SQL"],
       "parsed_text": "..."
     }}
 
@@ -750,72 +802,471 @@ def parse_resume_file(file_path):
         if "parsed_text" not in parsed or not parsed["parsed_text"]:
             parsed["parsed_text"] = text[:2000]
 
+        # Ensure all required fields are present (AI might have failed due to quota)
+        parsed.setdefault("name", "")
+        parsed.setdefault("email", "")
+        parsed.setdefault("phone", "")
+        parsed.setdefault("skills", [])
+        parsed.setdefault("education", [])
+        parsed.setdefault("experience", [])
+        
+        # If critical fields are still empty after enrichment, force fallback extraction
+        if not parsed.get("name") or not parsed.get("email"):
+            logger.warning("Critical fields empty after AI parsing, forcing comprehensive fallback extraction...")
+            parsed = enrich_parsed_resume(parsed, fallback_text=text, force_extraction=True)
+
         return parsed
 
     except Exception as e:
-        # If AI parsing completely fails, fallback to regex-based extraction
-        logger.warning(f"AI parsing failed completely: {str(e)}")
-        logger.info("Using fallback regex extraction...")
+        # If AI parsing completely fails (e.g., API quota exceeded), fallback to regex-based extraction
+        error_msg = str(e).lower()
+        if "quota" in error_msg or "429" in error_msg or "rate" in error_msg:
+            logger.warning(f"API quota exceeded or rate limit hit: {str(e)}")
+            logger.info("Using comprehensive fallback regex extraction due to API limits...")
+        else:
+            logger.warning(f"AI parsing failed: {str(e)}")
+            logger.info("Using fallback regex extraction...")
         
-        # Create empty structure and enrich it
+        # Create empty structure and enrich it with forced extraction
         parsed = {
-            "parsed_text": text[:2000] if text else ""
+            "parsed_text": text[:2000] if text else "",
+            "name": "",
+            "email": "",
+            "phone": "",
+            "skills": [],
+            "education": [],
+            "experience": []
         }
-        parsed = enrich_parsed_resume(parsed, fallback_text=text)
+        parsed = enrich_parsed_resume(parsed, fallback_text=text, force_extraction=True)
         
         return parsed
 
 
-def enrich_parsed_resume(data: dict, fallback_text: str = "") -> dict:
-    """Enrich parsed resume data with fallback regex extraction"""
-    text = data.get("parsed_text", fallback_text) or fallback_text or ""
+def enrich_parsed_resume(data: dict, fallback_text: str = "", force_extraction: bool = False) -> dict:
+    """
+    Enrich parsed resume data with fallback regex extraction
+    
+    Args:
+        data: Parsed resume data dictionary
+        fallback_text: Full resume text to extract from
+        force_extraction: If True, always perform extraction even if fields are populated
+    """
+    # ALWAYS use fallback_text if provided (full text), otherwise use truncated parsed_text
+    text = fallback_text or data.get("parsed_text", "") or ""
     
     # Ensure parsed_text is always populated
     if not data.get("parsed_text"):
         data["parsed_text"] = text
 
-    # Extract email with improved pattern
-    if not data.get("email"):
-        match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
-        data["email"] = match.group(0) if match else ""
+    # Extract email with multiple strategies
+    if not data.get("email") or force_extraction:
+        # Strategy 1: Find email after explicit label (highest confidence)
+        label_patterns = [
+            r"(?:email|e-mail|mail|contact)[\s:]+([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})",
+            r"(?:^|\n)(?:email|e-mail)[\s:]*([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})"
+        ]
+        
+        email_found = False
+        for pattern in label_patterns:
+            label_match = re.search(pattern, text, re.I | re.M)
+            if label_match:
+                email_candidate = label_match.group(1).lower().strip()
+                # Validate email format more strictly
+                if re.match(r"^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$", email_candidate):
+                    data["email"] = email_candidate
+                    email_found = True
+                    break
+        
+        # Strategy 2: Find any email in first 1000 characters (contact area)
+        if not email_found:
+            top_section = text[:1000]
+            email_matches = re.findall(r"\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b", top_section, re.I)
+            if email_matches:
+                # Take the first valid email
+                for email in email_matches:
+                    email = email.lower().strip()
+                    if re.match(r"^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$", email):
+                        data["email"] = email
+                        email_found = True
+                        break
+        
+        # Strategy 3: Search entire document as last resort
+        if not email_found:
+            match = re.search(r"\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b", text)
+            if match:
+                email = match.group(1).lower().strip()
+                if re.match(r"^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$", email):
+                    data["email"] = email
+                else:
+                    data["email"] = ""
+            else:
+                data["email"] = ""
+        
+        if not data.get("email"):
+            data["email"] = ""
 
     # Extract phone with improved pattern (handles various formats)
-    if not data.get("phone"):
-        # Try multiple phone patterns
-        phone_patterns = [
-            r"\+91[\s-]?\d{5}[\s-]?\d{5}",  # +91 82191-19441 (Indian format)
-            r"\+\d{1,3}[\s-]?\(?\d{3,5}\)?[\s-]?\d{3,5}[\s-]?\d{4}",  # +1-555-555-5555 or +91-12345-67890
-            r"\d{5}[\s-]\d{5}",  # 82191-19441
-            r"\+?\d{10,15}",  # Simple 10-15 digit number
-            r"\d{3}[-.\s]?\d{3}[-.\s]?\d{4}"  # 555-555-5555
+    if not data.get("phone") or force_extraction:
+        # First, explicitly check and skip roll numbers, student IDs, registration numbers
+        # These should NEVER be extracted as phone numbers
+        roll_patterns = [
+            r"(?:roll|reg|id|regno|student|enrollment|admission|registration)[\s_]*(?:no|number|num|#)?[\s:_-]+(\d+)",
         ]
-        for pattern in phone_patterns:
-            match = re.search(pattern, text)
+        roll_numbers = set()
+        for pattern in roll_patterns:
+            matches = re.findall(pattern, text, re.I)
+            roll_numbers.update(matches)
+        
+        logger.info(f"Found {len(roll_numbers)} roll/ID numbers to exclude: {list(roll_numbers)[:3]}")
+        
+        # Now check for phone/mobile/contact labels (positive indicators)
+        label_patterns = [
+            r"(?:phone|mobile|contact|cell|tel|telephone|whatsapp)[\s:]+([+]?[\d\s\-\(\)]+)",
+            r"(?:^|\n)(?:phone|mobile|contact)[\s:]*(\+?[\d\s\-\(\)]+)"
+        ]
+        
+        phone_found = False
+        for pattern in label_patterns:
+            match = re.search(pattern, text, re.I | re.M)
             if match:
-                data["phone"] = match.group(0).strip()
-                break
+                phone_candidate = match.group(1).strip()
+                # Validate it looks like a phone number (has at least 10 digits)
+                digits = re.findall(r'\d', phone_candidate)
+                digits_only = ''.join(digits)
+                
+                # Skip if it's in our roll numbers set
+                if digits_only in roll_numbers or digits_only[:8] in roll_numbers:
+                    logger.debug(f"Skipping {phone_candidate} - matches roll number")
+                    continue
+                
+                # Must have 10-15 digits to be valid
+                if len(digits) >= 10 and len(digits) <= 15:
+                    data["phone"] = phone_candidate
+                    phone_found = True
+                    logger.info(f"Phone found with label: {phone_candidate}")
+                    break
+        
+        # If no labeled phone found, try multiple phone patterns
+        # BUT be very careful not to pick up roll numbers
+        if not phone_found:
+            phone_patterns = [
+                r"\+91[\s-]?\d{5}[\s-]?\d{5}",  # +91 82191-19441 (Indian format) - country code is strong indicator
+                r"\+\d{1,3}[\s-]?\(?\d{3,5}\)?[\s-]?\d{3,5}[\s-]?\d{4}",  # International format with country code
+                r"\d{5}[\s-]\d{5}",  # 82191-19441 (hyphenated 10-digit)
+                r"\d{3}[-.\s]\d{3}[-.\s]\d{4}",  # 555-555-5555 (formatted with separators)
+            ]
+            for pattern in phone_patterns:
+                match = re.search(pattern, text)
+                if match:
+                    phone_candidate = match.group(0).strip()
+                    digits_only = re.sub(r'\D', '', phone_candidate)
+                    
+                    # Skip if it's a known roll number
+                    if digits_only in roll_numbers:
+                        continue
+                    
+                    # For patterns without country code, check nearby context more carefully
+                    # Get 50 chars before the match to check context
+                    match_pos = text.find(phone_candidate)
+                    if match_pos > 0:
+                        context_before = text[max(0, match_pos - 50):match_pos].lower()
+                        # Skip if preceded by roll/id/registration keywords
+                        if re.search(r'(?:roll|reg|id|regno|student|enrollment|admission)[\s_]*(?:no|number|num|#)?[\s:_-]*$', context_before):
+                            continue
+                    
+                    # Additional validation for 10-digit numbers without formatting
+                    # Only accept 10-digit numbers if they have good separators or country code
+                    if len(digits_only) == 10 and not re.search(r'[-\.\s]', phone_candidate):
+                        # Plain 10 digits with no separators - might be roll number
+                        # Only accept if it's at the top of resume (contact info area)
+                        lines_before = text[:match_pos].count('\n')
+                        if lines_before > 10:  # Not in first ~10 lines
+                            continue
+                    
+                    if 10 <= len(digits_only) <= 15:
+                        data["phone"] = phone_candidate
+                        phone_found = True
+                        break
+        
         if not data.get("phone"):
             data["phone"] = ""
 
-    # Extract name (first non-trivial line that doesn't look like contact info)
+    # Extract name - Multi-strategy approach with strict validation
+    if not data.get("name") or force_extraction:
+        # Define comprehensive exclusion keywords
+        INSTITUTION_KEYWORDS = {
+            'university', 'college', 'institute', 'school', 'academy', 'polytechnic',
+            'iit', 'nit', 'iiit', 'bits', 'vidyalaya', 'vidyapeeth', 'vishwavidyalaya'
+        }
+        
+        DEPARTMENT_KEYWORDS = {
+            'computer science', 'information technology', 'mechanical engineering',
+            'electrical engineering', 'electronics', 'civil engineering', 'chemical',
+            'biotechnology', 'mathematics', 'physics', 'chemistry', 'business',
+            'commerce', 'arts', 'science', 'engineering', 'technology', 'management',
+            'cse', 'ece', 'eee', 'mech', 'it', 'cs', 'dept', 'department',
+            'stream', 'branch', 'specialization', 'field'
+        }
+        
+        DEGREE_KEYWORDS = {
+            'bachelor', 'master', 'b.tech', 'm.tech', 'bca', 'mca', 'mba',
+            'b.sc', 'm.sc', 'b.e', 'm.e', 'phd', 'diploma', 'btech', 'mtech',
+            'degree', 'graduate', 'postgraduate', 'undergraduate'
+        }
+        
+        JOB_TITLE_KEYWORDS = {
+            'engineer', 'developer', 'manager', 'analyst', 'designer', 'consultant',
+            'specialist', 'coordinator', 'lead', 'senior', 'junior', 'intern',
+            'architect', 'administrator', 'officer', 'executive', 'associate',
+            'assistant', 'trainee', 'supervisor', 'director', 'head'
+        }
+        
+        # Strategy 1: Find name after explicit label (highest confidence)
+        name_label_patterns = [
+            r"(?:^|\n)(?:name|full name|candidate name)[\s:]+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){1,3})(?=\s*[\n\r]|$)",
+            r"^([A-Z][a-zA-Z]+\s+[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*$"
+        ]
+        
+        name_found = False
+        for pattern in name_label_patterns:
+            label_match = re.search(pattern, text, re.I | re.M)
+            if label_match:
+                name_candidate = label_match.group(1).strip()
+                name_lower = name_candidate.lower()
+                
+                # Comprehensive validation
+                is_valid = (
+                    2 <= len(name_candidate.split()) <= 4 and  # 2-4 words
+                    not any(keyword in name_lower for keyword in INSTITUTION_KEYWORDS) and
+                    not any(keyword in name_lower for keyword in DEPARTMENT_KEYWORDS) and
+                    not any(keyword in name_lower for keyword in DEGREE_KEYWORDS) and
+                    not any(keyword in name_lower for keyword in JOB_TITLE_KEYWORDS) and
+                    not re.search(r'\d', name_candidate) and  # No numbers
+                    not re.search(r'[<>{}\[\]\\\\/@#$%^&*:]', name_candidate)  # No special chars
+                )
+                
+                if is_valid:
+                    data["name"] = name_candidate
+                    name_found = True
+                    break
+        
+        # Strategy 2: Balanced approach - Look for name in first 10 lines with proper filtering
+        if not name_found:
+            logger.info(f"Name not found via labels, checking first 10 lines...")
+            for i, line in enumerate(text.splitlines()[:10]):
+                line = line.strip()
+                logger.debug(f"Line {i}: '{line}'")
+                
+                # Skip empty or very short lines
+                if not line or len(line) < 3:
+                    continue
+                
+                # Skip lines with clear non-name markers
+                if '@' in line or 'http' in line or 'www.' in line or '+' in line[:5]:
+                    continue
+                
+                # Skip pure section headers
+                if line.lower() in ['resume', 'cv', 'curriculum vitae', 'objective', 'profile', 'summary', 
+                                     'experience', 'education', 'skills', 'contact', 'projects', 'personal details']:
+                    continue
+                
+                # Get words
+                words = line.split()
+                if len(words) < 2 or len(words) > 5:  # Names are typically 2-4 words
+                    continue
+                
+                line_lower = line.lower()
+                
+                # Skip if contains common exclusion keywords
+                if any(keyword in line_lower for keyword in ['university', 'college', 'institute', 'engineering',
+                                                              'computer', 'science', 'technology', 'bachelor', 'master']):
+                    continue
+                
+                # If first 3 lines, check for name patterns
+                if i < 3:
+                    # Must have proper capitalization (Title Case or ALL CAPS)
+                    is_title_case = all(w[0].isupper() for w in words if w and len(w) > 1)
+                    is_all_caps = line.isupper()
+                    
+                    if (is_title_case or is_all_caps) and 2 <= len(words) <= 4:
+                        # Additional validation: no numbers, limited special chars
+                        if not re.search(r'\d', line) and not re.search(r'[<>{}\[\]\\/@#$%^&*:]', line):
+                            data["name"] = line.title() if is_all_caps else line
+                            name_found = True
+                            logger.info(f"Name found in first 3 lines: {data['name']}")
+                            break
+                
+                line_lower = line.lower()
+                
+                # Skip only very obvious section headers
+                if line_lower in ['work experience', 'professional experience', 'personal information',
+                                  'technical skills', 'professional summary', 'career objective']:
+                    continue
+                
+                # Pattern 1: Title Case - "John Doe" or "Sarah Smith"
+                if re.match(r'^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+$', line):
+                    data["name"] = line
+                    name_found = True
+                    break
+                
+                # Pattern 2: All Caps - "JOHN DOE" (convert to title case)
+                if line.isupper() and len(words) >= 1 and len(words) <= 4:
+                    # Skip if it looks like a title
+                    if not any(title in line_lower for title in ['engineer', 'developer', 'manager', 'analyst', 'designer']):
+                        data["name"] = line.title()
+                        name_found = True
+                        break
+                
+                # Pattern 3: Single capitalized word (might be first name)
+                if i < 5 and len(words) == 1 and words[0][0].isupper() and len(words[0]) > 2:
+                    # Check if next line might be last name
+                    lines = text.splitlines()
+                    if i+1 < len(lines):
+                        next_line = lines[i+1].strip()
+                        next_words = next_line.split()
+                        if next_words and next_words[0][0].isupper() and len(next_words[0]) > 2:
+                            # Combine first and last name
+                            data["name"] = f"{words[0]} {next_words[0]}"
+                            name_found = True
+                            break
+                
+                # Pattern 4: Mixed case with at least 2 capitalized words
+                if i < 8 and len(words) >= 2:
+                    capitalized_words = [w for w in words if w and len(w) > 1 and w[0].isupper()]
+                    if len(capitalized_words) >= 2:
+                        data["name"] = ' '.join(capitalized_words)
+                        name_found = True
+                        logger.info(f"Name found (Pattern 4 - capitalized words): {data['name']}")
+                        break
+                
+                # Pattern 5: First non-empty line as last resort (first 2 lines only)
+                if i < 2 and len(words) >= 1 and len(words) <= 4:
+                    # Must have at least one capital letter
+                    if any(c.isupper() for c in line):
+                        data["name"] = line
+                        name_found = True
+                        logger.info(f"Name found (Pattern 5 - first line): {data['name']}")
+                        break
+        
+        if not name_found:
+            logger.warning("Name extraction failed - no valid pattern found in first 15 lines")
+            data["name"] = ""
+    
+    # Legacy fallback (kept for compatibility, but should not execute if above works)
     if not data.get("name"):
         first_line = ""
-        for line in text.splitlines()[:10]:  # Check first 10 lines only
+        for line in text.splitlines()[:10]:  # Reduced to first 10 lines only
             line = line.strip()
-            # Skip lines that are email, phone, URLs, or very short
-            if (line and 
-                len(line) > 3 and 
-                "@" not in line and 
-                not line.startswith("+") and
-                not line.startswith("http") and
-                not re.match(r"^\d+$", line) and  # Skip pure numbers
-                len(line.split()) <= 5):  # Names typically 1-5 words
+            
+            # Skip empty lines
+            if not line or len(line) < 3:
+                continue
+            
+            # Skip lines with contact info
+            if "@" in line or "http" in line.lower():
+                continue
+            
+            # Skip pure numbers or lines with mostly numbers
+            if re.match(r"^[\d\s\-\+\(\)]+$", line):
+                continue
+            
+            # Skip lines that look like IDs, roll numbers, or registration numbers
+            if re.search(r'(?:roll|reg|id|regno|student|enrollment)[\s_]*(?:no|number|#)?[\s:]+', line, re.I):
+                continue
+            
+            # Skip common headers/sections
+            if any(keyword in line.lower() for keyword in [
+                'resume', 'curriculum vitae', 'cv', 'objective', 'profile',
+                'summary', 'experience', 'education', 'skills', 'projects',
+                'certifications', 'achievements', 'references', 'contact',
+                'personal details', 'professional', 'career', 'assignment',
+                'subject', 'topic', 'semester', 'year'
+            ]):
+                continue
+            
+            # Skip lines with "university", "college", "institute", "school"
+            if any(keyword in line.lower() for keyword in [
+                'university', 'college', 'institute', 'school', 'academy',
+                'iit', 'nit', 'iiit', 'bits', 'polytechnic', 'vidyalaya', 'dept'
+            ]):
+                continue
+            
+            # Skip department/major names (very common issue)
+            if any(keyword in line.lower() for keyword in [
+                'computer science', 'information technology', 'mechanical engineering',
+                'electrical engineering', 'electronics', 'civil engineering',
+                'chemical engineering', 'biotechnology', 'mathematics',
+                'physics', 'chemistry', 'business administration', 'commerce',
+                'arts', 'science', 'engineering', 'technology', 'management',
+                'cse', 'ece', 'eee', 'mech', 'it dept', 'dept', 'department',
+                'bachelor', 'master', 'b.tech', 'm.tech', 'bca', 'mca', 'mba',
+                'b.sc', 'm.sc', 'b.e', 'm.e', 'phd', 'diploma', 'btech', 'mtech'
+            ]):
+                continue
+            
+            # Skip lines with common job titles or professional designations
+            if any(keyword in line.lower() for keyword in [
+                'engineer', 'developer', 'manager', 'analyst', 'designer',
+                'consultant', 'specialist', 'coordinator', 'lead', 'senior',
+                'junior', 'intern', 'architect', 'administrator', 'officer'
+            ]):
+                continue
+            
+            # Skip common company names and tech companies
+            if any(keyword in line.lower() for keyword in [
+                'microsoft', 'google', 'amazon', 'facebook', 'meta', 'apple',
+                'ibm', 'oracle', 'infosys', 'tcs', 'wipro', 'cognizant',
+                'accenture', 'deloitte', 'pwc', 'kpmg', 'ey', 'capgemini',
+                'tech', 'systems', 'solutions', 'services', 'corp', 'inc',
+                'ltd', 'pvt', 'limited', 'corporation', 'company'
+            ]):
+                continue
+            
+            # Name should be 1-5 words typically (allow 5 for middle names)
+            words = line.split()
+            if len(words) > 6 or len(words) == 0:
+                continue
+            
+            # Skip if it contains special characters that don't belong in names
+            if re.search(r'[<>{}[\]\\\/|~`@#$%^&*:]', line):  # Added colon to skip "Location:", etc.
+                continue
+            
+            # Skip lines that are all caps (usually headings) - unless it's short (2-3 words)
+            # But allow all-caps names if they're 2-3 words and at the very top
+            is_all_caps = line.isupper()
+            is_short = len(words) <= 3
+            if is_all_caps and (not is_short or len(line) > 25):
+                continue
+            
+            # Additional check: skip if it looks like a degree or qualification
+            if re.search(r'\b(b\.|m\.|ph\.?d|degree|diploma)\b', line.lower()):
+                continue
+            
+            # Skip lines with numbers (likely not a name)
+            if re.search(r'\d', line):
+                continue
+            
+            # Check if it looks like a proper name (starts with capital letters)
+            # Most names have multiple words starting with capital letters
+            # Allow all-caps if it's 2-3 words (common in resumes)
+            if re.match(r'^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+$', line):
+                # Perfect match: Title Case name
                 first_line = line
                 break
+            elif is_all_caps and is_short and re.match(r'^[A-Z\s]+$', line):
+                # All caps, 2-3 words - likely a name at top of resume
+                first_line = line.title()  # Convert to Title Case
+                break
+            
+            # Fallback: accept any line with 2-4 title-case words
+            if 2 <= len(words) <= 4 and all(w[0].isupper() for w in words if w):
+                first_line = line
+                break
+        
         data["name"] = first_line
 
     # Extract education
-    if not data.get("education") or len(data.get("education", [])) == 0:
+    if (not data.get("education") or len(data.get("education", [])) == 0) or force_extraction:
         edu_matches = re.findall(
             r"(Bachelor|Master|B\.?Tech|M\.?Tech|MCA|BCA|BSc|MSc|MBA|PhD|Diploma).*",
             text,
@@ -830,26 +1281,48 @@ def enrich_parsed_resume(data: dict, fallback_text: str = "") -> dict:
         data["education"] = list(set(edu_list)) if edu_list else []
 
     # Extract skills
-    if not data.get("skills") or len(data.get("skills", [])) == 0:
+    if (not data.get("skills") or len(data.get("skills", [])) == 0) or force_extraction:
         data["skills"] = extract_skills_from_text(text)
     
     # Extract experience sections (basic)
-    if not data.get("experience") or len(data.get("experience", [])) == 0:
+    if (not data.get("experience") or len(data.get("experience", [])) == 0) or force_extraction:
+        # Only look for actual job experience with company/role context
+        # DO NOT extract standalone year ranges (those are usually education dates)
         exp_patterns = [
-            r"((?:Software Engineer|Developer|Manager|Analyst|Designer|Consultant).*?(?:at|@)\s+\w+.*)",
-            r"(\d{4}\s*[-–]\s*(?:\d{4}|Present|Current).*?(?:\n|$))"
+            r"((?:Software Engineer|Developer|Manager|Analyst|Designer|Consultant|Engineer|Specialist|Lead|Architect).*?(?:at|@|,)\s+[A-Z]\w+.*?(?:\d{4}\s*[-–]\s*(?:\d{4}|Present|Current))?)",
         ]
         exp_matches = []
+        
+        # Education-related keywords to filter out
+        education_keywords = [
+            'university', 'college', 'institute', 'school', 'academy',
+            'bachelor', 'master', 'b.tech', 'm.tech', 'bca', 'mca', 'mba',
+            'degree', 'diploma', 'phd', 'bsc', 'msc', 'graduation',
+            'undergraduate', 'postgraduate', 'course', 'semester', 'cgpa', 'gpa'
+        ]
+        
         for pattern in exp_patterns:
             matches = re.findall(pattern, text, re.I)
             exp_matches.extend(matches)
         
-        # Clean and deduplicate
+        # Clean and filter out education-related entries
         exp_list = []
         for match in exp_matches[:10]:  # Limit to 10 experience entries
             cleaned = match.strip()
-            if cleaned and len(cleaned) > 10:
+            cleaned_lower = cleaned.lower()
+            
+            # Skip if it contains education keywords
+            if any(edu_keyword in cleaned_lower for edu_keyword in education_keywords):
+                continue
+            
+            # Skip if it's just a year range without role/company context
+            if re.match(r'^\d{4}\s*[-–]\s*(?:\d{4}|present|current)\s*$', cleaned_lower.strip()):
+                continue
+            
+            # Must have meaningful content (role + company)
+            if cleaned and len(cleaned) > 15:
                 exp_list.append(cleaned[:200])  # Limit length
+        
         data["experience"] = list(set(exp_list)) if exp_list else []
 
     return data

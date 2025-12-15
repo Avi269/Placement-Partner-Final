@@ -153,21 +153,146 @@ def extract_skills_from_text(text: str) -> List[str]:
 # ============================================================================
 
 def calculate_job_fit_with_gemini(resume_skills: List[str], jd_text: str) -> Tuple[float, List[str], List[str]]:
-    """Calculate job fit using AI analysis"""
+    """
+    Calculate job fit using AI analysis with robust fallback
+    
+    Args:
+        resume_skills: List of skills from resume
+        jd_text: Job description text
+    
+    Returns:
+        Tuple of (fit_score, matching_skills, missing_skills)
+    """
     try:
+        # Attempt AI analysis first
         analysis = analyze_job_fit_with_ai(
             resume_text=" ".join(resume_skills),
             job_description=jd_text
         )
         
-        return (
-            float(analysis.get("fit_score", 0)),
-            analysis.get("matching_skills", []),
-            analysis.get("missing_skills", [])
-        )
+        fit_score = float(analysis.get("fit_score", 0))
+        matching_skills = analysis.get("matching_skills", [])
+        missing_skills = analysis.get("missing_skills", [])
+        
+        # Validate response
+        if not matching_skills and not missing_skills:
+            logger.warning("AI returned empty skills, using fallback")
+            raise ValueError("Empty AI response")
+        
+        logger.info(f"AI analysis: {fit_score}% fit, {len(matching_skills)} matching, {len(missing_skills)} missing")
+        return (fit_score, matching_skills, missing_skills)
+        
     except Exception as e:
-        logger.error(f"AI job fit calculation failed: {e}")
+        logger.error(f"AI job fit calculation failed: {e}, using fallback")
+        
+        # FALLBACK: Rule-based matching
+        return calculate_job_fit_with_fallback(resume_skills, jd_text)
+
+
+def calculate_job_fit_with_fallback(resume_skills: List[str], jd_text: str) -> Tuple[float, List[str], List[str]]:
+    """
+    Fallback job fit calculation using keyword matching
+    
+    Args:
+        resume_skills: List of skills from resume
+        jd_text: Job description text
+    
+    Returns:
+        Tuple of (fit_score, matching_skills, missing_skills)
+    """
+    if not resume_skills or not jd_text:
+        logger.warning("Empty input for fallback job fit")
         return (0.0, [], [])
+    
+    # Normalize inputs
+    jd_lower = jd_text.lower()
+    resume_skills_lower = [s.lower().strip() for s in resume_skills if s.strip()]
+    
+    # Extract skills from JD using common patterns
+    jd_skills = set()
+    
+    # Common skill keywords to look for
+    skill_patterns = [
+        r'\b(python|java|javascript|typescript|c\+\+|c#|ruby|php|swift|kotlin|go|rust)\b',
+        r'\b(react|angular|vue|django|flask|spring|node\.js|express|fastapi)\b',
+        r'\b(sql|mysql|postgresql|mongodb|redis|elasticsearch|dynamodb)\b',
+        r'\b(aws|azure|gcp|docker|kubernetes|jenkins|git|ci/cd)\b',
+        r'\b(html|css|sass|tailwind|bootstrap|material-ui)\b',
+        r'\b(rest|api|graphql|microservices|serverless)\b',
+        r'\b(machine learning|ml|ai|deep learning|nlp|computer vision)\b',
+        r'\b(pandas|numpy|scikit-learn|tensorflow|pytorch|keras)\b',
+        r'\b(linux|unix|bash|shell scripting|powershell)\b',
+        r'\b(agile|scrum|kanban|jira|confluence)\b',
+    ]
+    
+    import re
+    for pattern in skill_patterns:
+        matches = re.findall(pattern, jd_lower)
+        jd_skills.update(matches)
+    
+    # Also extract words that appear in JD and might be skills
+    tech_words = re.findall(r'\b[a-z][a-z0-9\.\-]{1,14}\b', jd_lower)
+    
+    # Filter to likely tech skills
+    common_tech = {
+        'api', 'rest', 'json', 'xml', 'http', 'tcp', 'ip', 'ssh', 'cli',
+        'orm', 'mvc', 'crud', 'auth', 'oauth', 'jwt', 'ssl', 'tls',
+        'nosql', 'cache', 'queue', 'async', 'sync', 'ajax',
+        'ui', 'ux', 'frontend', 'backend', 'fullstack', 'devops'
+    }
+    
+    jd_skills.update([w for w in tech_words if w in common_tech or len(w) > 4])
+    
+    # Find matching skills
+    matching_skills = []
+    for skill in resume_skills_lower:
+        skill_clean = skill.replace('.', '').replace('-', '').replace(' ', '')
+        
+        if (skill in jd_lower or 
+            skill.replace('.', '') in jd_lower or
+            skill in jd_skills or
+            skill_clean in jd_lower):
+            matching_skills.append(resume_skills[resume_skills_lower.index(skill)])
+    
+    # Find missing skills
+    missing_skills = []
+    for jd_skill in jd_skills:
+        jd_skill_clean = jd_skill.replace('.', '').replace('-', '').replace(' ', '')
+        
+        found = False
+        for resume_skill in resume_skills_lower:
+            resume_skill_clean = resume_skill.replace('.', '').replace('-', '').replace(' ', '')
+            if (jd_skill in resume_skill or 
+                resume_skill in jd_skill or
+                jd_skill_clean == resume_skill_clean):
+                found = True
+                break
+        
+        if not found and len(jd_skill) > 2:
+            if jd_skill.upper() == jd_skill.replace('.', '').replace('-', ''):
+                missing_skills.append(jd_skill.upper())
+            else:
+                missing_skills.append(jd_skill.title())
+    
+    # Remove duplicates
+    matching_skills = list(dict.fromkeys(matching_skills))
+    missing_skills = list(dict.fromkeys(missing_skills))
+    
+    # Calculate fit score
+    if len(jd_skills) == 0:
+        fit_score = len(matching_skills) * 10
+        fit_score = min(fit_score, 100)
+    else:
+        fit_score = (len(matching_skills) / max(len(jd_skills), len(resume_skills))) * 100
+        fit_score = min(fit_score, 100)
+    
+    logger.info(f"Fallback analysis: {fit_score:.1f}% fit, {len(matching_skills)} matching, {len(missing_skills)} missing")
+    
+    return (
+        round(fit_score, 1),
+        matching_skills[:20],
+        missing_skills[:20]
+    )
 
 
 # ============================================================================

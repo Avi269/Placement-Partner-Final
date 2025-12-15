@@ -54,18 +54,18 @@ class JobSearchAPI:
             remotive_jobs = self._fetch_remotive(skills, max_results=5)
             if remotive_jobs:
                 all_jobs.extend(remotive_jobs)
-                logger.info(f"Remotive API: {len(remotive_jobs)} jobs fetched")
+                logger.info(f"✅ Remotive: {len(remotive_jobs)} jobs")
         except Exception as e:
-            logger.error(f"Remotive API failed: {e}")
+            logger.error(f"❌ Remotive failed: {e}")
         
         # 2. Arbeitnow API (FREE, no key, reliable)
         try:
             arbeitnow_jobs = self._fetch_arbeitnow(skills, max_results=5)
             if arbeitnow_jobs:
                 all_jobs.extend(arbeitnow_jobs)
-                logger.info(f"Arbeitnow API: {len(arbeitnow_jobs)} jobs fetched")
+                logger.info(f"✅ Arbeitnow: {len(arbeitnow_jobs)} jobs")
         except Exception as e:
-            logger.error(f"Arbeitnow API failed: {e}")
+            logger.error(f"❌ Arbeitnow failed: {e}")
         
         # 3. Adzuna API (Optional, best for India)
         if self.adzuna_app_id and self.adzuna_api_key and location == "in":
@@ -73,9 +73,9 @@ class JobSearchAPI:
                 adzuna_jobs = self._fetch_adzuna(skills, max_results=5)
                 if adzuna_jobs:
                     all_jobs.extend(adzuna_jobs)
-                    logger.info(f"Adzuna API: {len(adzuna_jobs)} jobs fetched")
+                    logger.info(f"✅ Adzuna: {len(adzuna_jobs)} jobs")
             except Exception as e:
-                logger.error(f"Adzuna API failed: {e}")
+                logger.error(f"❌ Adzuna failed: {e}")
         
         if not all_jobs:
             logger.warning(f"No jobs found for skills: {', '.join(skills)}")
@@ -87,7 +87,7 @@ class JobSearchAPI:
         # Sort by relevance (India priority)
         sorted_jobs = self._sort_by_relevance(unique_jobs, skills, location)
         
-        logger.info(f"Total unique jobs: {len(sorted_jobs)}")
+        logger.info(f"📊 Total: {len(sorted_jobs)} unique jobs")
         return sorted_jobs[:max_results]
     
     def _fetch_remotive(self, skills: List[str], max_results: int = 10) -> List[Dict]:

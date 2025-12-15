@@ -68,6 +68,7 @@ from .utils import (
     get_learning_resources_with_gemini,  # Get learning recommendations
     extract_text_from_file,  # Extract text from files
     calculate_ats_score,  # Calculate ATS compatibility score
+    calculate_job_fit_with_fallback,    # ✅ Add this new import
 )
 
 # Local imports - job search
@@ -532,22 +533,15 @@ def resume_upload_view(request):
             
             # Fetch job recommendations based on skills
             try:
-                if parsed_data.get("skills"):
-                    # Pass more skills for better matching (up to 10)
-                    skills_for_search = parsed_data.get("skills", [])[:10]
-                    logging.info(f"Fetching jobs for skills: {skills_for_search}")
-                    recommended_jobs = fetch_jobs_for_skills(
-                        skills_for_search,
-                        location="in",
-                        max_results=10
-                    )
-                    logging.info(f"Fetched {len(recommended_jobs)} recommended jobs")
-                    if recommended_jobs:
-                        logging.info(f"Sample job: {recommended_jobs[0].get('title', 'N/A')} at {recommended_jobs[0].get('company', 'N/A')}")
-                    else:
-                        logging.warning("No jobs were returned from APIs")
+                recommended_jobs = fetch_jobs_for_skills(
+                    parsed_data.get("skills", [])[:10],
+                    max_results=10
+                ) if parsed_data.get("skills") else []
+                logging.info(f"Fetched {len(recommended_jobs)} recommended jobs")
+                if recommended_jobs:
+                    logging.info(f"Sample job: {recommended_jobs[0].get('title', 'N/A')} at {recommended_jobs[0].get('company', 'N/A')}")
                 else:
-                    logging.warning("No skills found, cannot fetch job recommendations")
+                    logging.warning("No jobs were returned from APIs")
             except Exception as e:
                 logging.exception(f"Job fetch failed with exception: {e}")
 
@@ -627,194 +621,119 @@ def job_matching_view(request):
     elif request.method == 'POST':
         try:
             data = request.POST
-            jd_text = data.get("description", "")
+            jd_text = data.get("description", "").strip()
             
-            logging.info(f"Job matching request received. JD text length: {len(jd_text)}")
+            if not jd_text:
+                return JsonResponse({
+                    "success": False, 
+                    "message": "Please provide a job description"
+                })
+            
+            logging.info(f"Job matching request received. JD length: {len(jd_text)}")
 
-            # ✅ Get resume from session only (no auth check)
-            resume = None
+            # Get resume from session
             resume_id = request.session.get("resume_id")
             logging.info(f"Session resume_id: {resume_id}")
             resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
 
             if not resume:
                 logging.warning("No resume found for job matching")
-                return JsonResponse({"success": False, "message": "No resume found. Please upload your resume first."})
+                return JsonResponse({
+                    "success": False, 
+                    "message": "No resume found. Please upload your resume first."
+                })
 
-            logging.info(f"Resume skills: {resume.extracted_skills}")
+            if not resume.extracted_skills:
+                logging.warning("Resume has no extracted skills")
+                return JsonResponse({
+                    "success": False,
+                    "message": "Your resume has no extracted skills. Please re-upload with a better formatted resume."
+                })
             
-            # Calculate job fit with AI (has built-in fallback)
+            logging.info(f"Resume skills ({len(resume.extracted_skills)}): {resume.extracted_skills[:10]}")
+            
+            # Calculate job fit (has built-in fallback)
             try:
                 fit_score, matching_skills, missing_skills = calculate_job_fit_with_gemini(
                     resume.extracted_skills,
                     jd_text
                 )
-                logging.info(f"Job matching complete. Fit score: {fit_score}")
+                logging.info(f"✅ Job fit calculated: {fit_score}% (matching: {len(matching_skills)}, missing: {len(missing_skills)})")
             except Exception as match_error:
-                # This shouldn't happen since calculate_job_fit_with_gemini has fallback
-                # But just in case, use direct fallback
-                logging.error(f"Job matching failed completely: {match_error}")
-                from .utils import calculate_job_fit_with_fallback
+                logging.error(f"Job matching completely failed: {match_error}")
+                # Last resort fallback
                 fit_score, matching_skills, missing_skills = calculate_job_fit_with_fallback(
                     resume.extracted_skills,
                     jd_text
                 )
-                logging.info(f"Fallback job matching complete. Fit score: {fit_score}")
+                logging.info(f"✅ Fallback job fit: {fit_score}%")
+            
+            # Ensure we have at least some data
+            if not matching_skills and not missing_skills:
+                logging.warning("Both matching and missing skills are empty, creating defaults")
+                # If everything failed, at least show resume skills
+                matching_skills = resume.extracted_skills[:10]
+                missing_skills = ["Technical Skills", "Communication", "Problem Solving"]
+                fit_score = 50.0
             
             # Calculate experience match
-            experience_match = 0
-            jd_lower = jd_text.lower()
-            
-            # Extract years of experience from JD
-            import re
-            exp_patterns = [r'(\d+)\+?\s*(?:years?|yrs?)\s+(?:of\s+)?experience',
-                          r'experience\s+of\s+(\d+)\+?\s*(?:years?|yrs?)',
-                          r'minimum\s+(\d+)\+?\s*(?:years?|yrs?)']
-            required_years = 0
-            for pattern in exp_patterns:
-                match = re.search(pattern, jd_lower)
-                if match:
-                    required_years = int(match.group(1))
-                    break
-            
-            # Extract years from resume experience
-            resume_years = 0
-            if resume.experience:
-                for exp in resume.experience:
-                    exp_str = str(exp).lower()
-                    year_match = re.search(r'(\d+)\+?\s*(?:years?|yrs?)', exp_str)
-                    if year_match:
-                        resume_years = max(resume_years, int(year_match.group(1)))
-            
-            # Calculate experience match score
-            if required_years == 0:
-                experience_match = 75  # No specific requirement, give decent score
-            elif resume_years >= required_years:
-                experience_match = 100  # Meets or exceeds requirement
-            elif resume_years >= required_years * 0.7:
-                experience_match = 80  # Close to requirement
-            elif resume_years >= required_years * 0.5:
-                experience_match = 60  # Half the requirement
-            else:
-                experience_match = max(30, int((resume_years / required_years) * 100))
-            
-            logging.info(f"Experience match: {experience_match}% (Resume: {resume_years} years, Required: {required_years} years)")
+            experience_match = calculate_experience_match(resume, jd_text)
             
             # Calculate education match
-            education_match = 0
-            education_keywords = {
-                'phd': ['phd', 'ph.d', 'doctorate', 'doctoral'],
-                'masters': ['masters', 'master', 'm.tech', 'mtech', 'm.sc', 'msc', 'mba', 'ms'],
-                'bachelors': ['bachelors', 'bachelor', 'b.tech', 'btech', 'b.sc', 'bsc', 'b.e', 'be', 'bca', 'bba'],
-                'diploma': ['diploma', 'associate']
-            }
+            education_match = calculate_education_match(resume, jd_text)
             
-            # Check what education is required
-            required_edu_level = 0
-            for level, keywords in education_keywords.items():
-                for keyword in keywords:
-                    if keyword in jd_lower:
-                        if level == 'phd':
-                            required_edu_level = 4
-                        elif level == 'masters':
-                            required_edu_level = max(required_edu_level, 3)
-                        elif level == 'bachelors':
-                            required_edu_level = max(required_edu_level, 2)
-                        elif level == 'diploma':
-                            required_edu_level = max(required_edu_level, 1)
-                        break
-            
-            # Check resume education
-            resume_edu_level = 0
-            if resume.education:
-                for edu in resume.education:
-                    edu_str = str(edu).lower()
-                    if any(k in edu_str for k in education_keywords['phd']):
-                        resume_edu_level = 4
-                    elif any(k in edu_str for k in education_keywords['masters']):
-                        resume_edu_level = max(resume_edu_level, 3)
-                    elif any(k in edu_str for k in education_keywords['bachelors']):
-                        resume_edu_level = max(resume_edu_level, 2)
-                    elif any(k in edu_str for k in education_keywords['diploma']):
-                        resume_edu_level = max(resume_edu_level, 1)
-            
-            # Calculate education match score
-            if required_edu_level == 0:
-                education_match = 80  # No specific requirement
-            elif resume_edu_level >= required_edu_level:
-                education_match = 100  # Meets or exceeds
-            elif resume_edu_level == required_edu_level - 1:
-                education_match = 70  # One level below
-            elif resume_edu_level > 0:
-                education_match = 50  # Has some education
-            else:
-                education_match = 30  # No education info
-            
-            logging.info(f"Education match: {education_match}% (Resume level: {resume_edu_level}, Required level: {required_edu_level})")
-            
-            # Get learning resources (has built-in fallback)
-            learning_resources = get_learning_resources_with_gemini(missing_skills)
+            # Get learning resources for missing skills
+            learning_resources = []
+            if missing_skills:
+                try:
+                    learning_resources = get_learning_resources_with_gemini(missing_skills[:5])
+                    logging.info(f"✅ Generated {len(learning_resources)} learning resource groups")
+                except Exception as lr_error:
+                    logging.error(f"Learning resources failed: {lr_error}")
+                    # Fallback: Generate basic YouTube links
+                    learning_resources = [
+                        {
+                            "skill": skill,
+                            "resources": [
+                                {
+                                    "title": f"Learn {skill} - YouTube Tutorials",
+                                    "url": f"https://www.youtube.com/results?search_query={skill.replace(' ', '+')}+tutorial+2024",
+                                    "type": "Video",
+                                    "description": f"Comprehensive video tutorials on {skill}",
+                                    "duration": "Varies"
+                                },
+                                {
+                                    "title": f"{skill} Documentation",
+                                    "url": f"https://www.google.com/search?q={skill.replace(' ', '+')}+official+documentation",
+                                    "type": "Documentation",
+                                    "description": f"Official documentation and guides",
+                                    "duration": "Self-paced"
+                                }
+                            ]
+                        }
+                        for skill in missing_skills[:5]
+                    ]
 
-            # Generate resume improvement suggestions
-            resume_improvements = [
-                {
-                    "category": "Missing Skills",
-                    "priority": "High",
-                    "suggestion": f"Add {len(missing_skills)} missing skills to your resume",
-                    "details": f"Focus on: {', '.join(missing_skills[:5])}" + (" and more" if len(missing_skills) > 5 else ""),
-                    "action": "Update your skills section with relevant experience and projects"
-                },
-                {
-                    "category": "Skill Match",
-                    "priority": "Medium" if fit_score >= 50 else "High",
-                    "suggestion": f"Your current match rate is {fit_score}%",
-                    "details": f"You have {len(matching_skills)} out of required skills. Aim for 80%+ match.",
-                    "action": "Learn the missing skills through online courses and add projects demonstrating them"
-                },
-                {
-                    "category": "Keywords",
-                    "priority": "Medium",
-                    "suggestion": "Optimize for Applicant Tracking Systems (ATS)",
-                    "details": "Include job-specific keywords naturally in your experience and skills sections",
-                    "action": "Mirror the job description language while staying truthful about your experience"
-                },
-                {
-                    "category": "Quantifiable Achievements",
-                    "priority": "High",
-                    "suggestion": "Add measurable results to your experience",
-                    "details": "Include metrics like 'Improved performance by 30%' or 'Reduced costs by ₹2L'",
-                    "action": "Review each experience bullet point and add numbers, percentages, or specific outcomes"
-                },
-                {
-                    "category": "Projects",
-                    "priority": "High",
-                    "suggestion": "Build projects showcasing missing skills",
-                    "details": f"Create 2-3 projects using: {', '.join(missing_skills[:3])}",
-                    "action": "Add GitHub links and detailed project descriptions to your resume"
-                }
-            ]
-
-            # Fetch recommended jobs based on resume skills
+            # Fetch recommended jobs
             recommended_jobs = []
             try:
                 if resume.extracted_skills:
-                    logging.info(f"Fetching jobs for skills: {resume.extracted_skills}")
                     recommended_jobs = fetch_jobs_for_skills(
-                        resume.extracted_skills,
+                        resume.extracted_skills[:10],
                         location="in",
                         max_results=10
                     )
-                    logging.info(f"Found {len(recommended_jobs)} recommended jobs")
+                    logging.info(f"✅ Found {len(recommended_jobs)} recommended jobs")
             except Exception as job_error:
-                logging.error(f"Error fetching recommended jobs: {job_error}")
+                logging.error(f"Job fetching failed: {job_error}")
 
             # Calculate overall weighted fit score
             overall_fit_score = int((fit_score * 0.5) + (experience_match * 0.3) + (education_match * 0.2))
             
-            return JsonResponse({
+            response_data = {
                 "success": True,
                 "fit_score": overall_fit_score,
-                "skills_match": fit_score,
+                "skills_match": int(fit_score),
                 "experience_match": experience_match,
                 "education_match": education_match,
                 "matching_skills": matching_skills,
@@ -828,203 +747,359 @@ def job_matching_view(request):
                 "recommendations": {
                     "skills_to_develop": missing_skills,
                     "learning_resources": learning_resources,
-                    "resume_improvements": resume_improvements
+                    "resume_improvements": []
                 },
-                "recommended_jobs": recommended_jobs,
-                "match_details": {
-                    "required_experience_years": required_years,
-                    "resume_experience_years": resume_years,
-                    "required_education_level": required_edu_level,
-                    "resume_education_level": resume_edu_level
-                }
-            })
+                "recommended_jobs": recommended_jobs
+            }
+            
+            logging.info(f"✅ Sending response: {len(matching_skills)} matching, {len(missing_skills)} missing, {len(learning_resources)} resources")
+            return JsonResponse(response_data)
 
         except Exception as e:
             logging.exception("Job matching error")
-            return JsonResponse({"success": False, "message": f"Error analyzing job match: {str(e)}"})
+            return JsonResponse({
+                "success": False, 
+                "message": f"Error analyzing job match: {str(e)}"
+            })
 
-    else:
-        return JsonResponse({"success": False, "message": "Invalid method"})
 
+@csrf_exempt
 def cover_letter_view(request):
-    """Render the cover letter page"""
-    if request.method == 'POST':
-        # Extract form data
-        job_title = request.POST.get('job_title', '')
-        company_name = request.POST.get('company_name', '')
-        jd_text = request.POST.get('job_description', '')
-        resume_text = request.POST.get('resume_text', '')
-        custom_prompt = request.POST.get('custom_prompt', '')
-        applicant_name = request.POST.get('applicant_name', '')
-        applicant_email = request.POST.get('applicant_email', '')
-
+    """Cover letter generation view"""
+    if request.method == 'GET':
+        # Get resume from session
+        resume = None
+        resume_id = request.session.get("resume_id")
+        if resume_id:
+            resume = Resume.objects.filter(id=resume_id).first()
+        
+        # Fetch recommended jobs for cover letter
+        recommended_jobs = []
+        if resume and resume.extracted_skills:
+            try:
+                recommended_jobs = fetch_jobs_for_skills(
+                    resume.extracted_skills[:10],
+                    location="in",
+                    max_results=10
+                )
+                logging.info(f"Loaded {len(recommended_jobs)} jobs for cover letter page")
+            except Exception as e:
+                logging.error(f"Error fetching jobs: {e}")
+        
+        context = {
+            'resume': resume,
+            'has_resume': resume is not None,
+            'recommended_jobs': recommended_jobs
+        }
+        return render(request, 'core/cover_letter.html', context)
+    
+    elif request.method == 'POST':
         try:
-            # Generate cover letter via Gemini helper (has built-in fallback)
-            cover_letter = generate_cover_letter_with_gemini(
-                resume_text=resume_text,
-                jd_text=jd_text,
-                custom_prompt=custom_prompt,
-                applicant_name=applicant_name,
-                applicant_email=applicant_email,
-                job_title=job_title,
-                company_name=company_name
-            )
-            
-            # Check if fallback was used
-            if "template-based approach" in cover_letter:
-                logging.info("Cover letter generated using fallback template")
-                fallback_message = "Cover letter generated using template (AI quota exceeded). Please customize it with your details."
+            # Try to parse JSON first, then fall back to form data
+            if request.content_type == 'application/json':
+                try:
+                    data = json.loads(request.body)
+                except json.JSONDecodeError:
+                    data = request.POST
             else:
-                logging.info("Cover letter generated using AI")
-                fallback_message = None
+                data = request.POST
+            
+            # Get form data with multiple possible field names
+            job_title = (
+                data.get('job_title') or 
+                data.get('jobTitle') or 
+                data.get('title') or 
+                ''
+            ).strip()
+            
+            company = (
+                data.get('company') or 
+                data.get('company_name') or 
+                data.get('companyName') or 
+                ''
+            ).strip()
+            
+            job_description = (
+                data.get('job_description') or 
+                data.get('jobDescription') or 
+                data.get('description') or 
+                ''
+            ).strip()
+            
+            custom_prompt = (
+                data.get('custom_prompt') or 
+                data.get('customPrompt') or 
+                data.get('additional_notes') or 
+                ''
+            ).strip()
+            
+            # Debug logging
+            logging.info(f"Cover letter request - Title: '{job_title}', Company: '{company}', JD length: {len(job_description)}")
+            logging.info(f"Request content type: {request.content_type}")
+            logging.info(f"POST data keys: {list(data.keys())}")
+            
+            # Validation
+            if not job_title:
+                return JsonResponse({
+                    "success": False,
+                    "message": "Please provide a job title"
+                })
+            
+            if not company:
+                return JsonResponse({
+                    "success": False,
+                    "message": "Please provide a company name"
+                })
+            
+            if not job_description:
+                return JsonResponse({
+                    "success": False,
+                    "message": "Please provide a job description"
+                })
+            
+            # Get resume from session
+            resume_id = request.session.get("resume_id")
+            logging.info(f"Session resume_id: {resume_id}")
+            
+            resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
+            
+            if not resume:
+                return JsonResponse({
+                    "success": False,
+                    "message": "No resume found. Please upload your resume first."
+                })
+            
+            if not resume.parsed_text and not resume.extracted_skills:
+                return JsonResponse({
+                    "success": False,
+                    "message": "Your resume has no content. Please re-upload your resume."
+                })
+            
+            # Generate cover letter using AI
+            try:
+                cover_letter_text = generate_cover_letter_with_gemini(
+                    resume_text=resume.parsed_text or " ".join(resume.extracted_skills),
+                    jd_text=f"Job Title: {job_title}\nCompany: {company}\n\n{job_description}",
+                    custom_prompt=custom_prompt,
+                    applicant_name=resume.name or "Applicant",
+                    applicant_email=resume.email or "",
+                    job_title=job_title,
+                    company_name=company
+                )
                 
-        except ValidationError as e:
-            message = str(e)
-            logging.error(f"Validation error in cover letter generation: {message}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'message': message})
-            messages.error(request, message)
-            return redirect('cover_letter')
+                logging.info(f"✅ Cover letter generated successfully ({len(cover_letter_text)} chars)")
+                
+                # Save cover letter
+                cover_letter = CoverLetter.objects.create(
+                    resume=resume,
+                    job_description=None,  # Not linked to JobDescription model
+                    generated_text=cover_letter_text
+                )
+                
+                return JsonResponse({
+                    "success": True,
+                    "cover_letter": cover_letter_text,
+                    "cover_letter_id": cover_letter.id,
+                    "message": "Cover letter generated successfully!"
+                })
+                
+            except ValidationError as ve:
+                logging.error(f"Cover letter validation error: {ve}")
+                return JsonResponse({
+                    "success": False,
+                    "message": str(ve)
+                })
+            except Exception as gen_error:
+                logging.error(f"Cover letter generation failed: {gen_error}")
+                return JsonResponse({
+                    "success": False,
+                    "message": "Failed to generate cover letter. Please try again or contact support."
+                })
+        
         except Exception as e:
-            logging.exception("Error generating cover letter")
-            # This should rarely happen since generate_cover_letter_with_gemini has fallback
-            message = "Unable to generate cover letter. Please try again."
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'message': message})
-            messages.error(request, message)
-            return redirect('cover_letter')
+            logging.exception("Cover letter generation error")
+            return JsonResponse({
+                "success": False,
+                "message": f"Error generating cover letter: {str(e)}"
+            })
 
-        # AJAX success response
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            response_data = {'success': True, 'cover_letter': cover_letter}
-            if fallback_message:
-                response_data['warning'] = fallback_message
-            return JsonResponse(response_data)
-
-        # Non-AJAX success path
-        if fallback_message:
-            messages.warning(request, fallback_message)
-        else:
-            messages.success(request, 'Cover letter generated successfully!')
-        return render(request, 'core/cover_letter.html', {'cover_letter': cover_letter})
-
-    # GET request: fetch resume from session only
-    recommended_jobs = []
-    resume = None
-    
-    resume_id = request.session.get("resume_id")
-    resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
-    
-    # Fetch jobs based on skills
-    if resume and resume.extracted_skills:
-        try:
-            recommended_jobs = fetch_jobs_for_skills(resume.extracted_skills, location="in", max_results=10)
-        except Exception as e:
-            logging.error(f"Error fetching jobs: {e}")
-    
-    # Prepare resume summary from extracted data
-    resume_summary = ""
-    if resume:
-        # Build resume summary from experience, education, and skills
-        summary_parts = []
-        
-        if resume.experience:
-            exp_text = "Experience: "
-            exp_items = []
-            for exp in resume.experience[:3]:  # Top 3 experiences
-                if isinstance(exp, dict):
-                    title = exp.get('title', exp.get('position', ''))
-                    company = exp.get('company', '')
-                    if title or company:
-                        exp_items.append(f"{title} at {company}" if title and company else (title or company))
-                elif isinstance(exp, str):
-                    exp_items.append(exp)
-            if exp_items:
-                summary_parts.append(exp_text + "; ".join(exp_items))
-        
-        if resume.education:
-            edu_text = "Education: "
-            edu_items = []
-            for edu in resume.education[:2]:  # Top 2 education entries
-                if isinstance(edu, dict):
-                    degree = edu.get('degree', edu.get('qualification', ''))
-                    school = edu.get('school', edu.get('institution', ''))
-                    if degree or school:
-                        edu_items.append(f"{degree} from {school}" if degree and school else (degree or school))
-                elif isinstance(edu, str):
-                    edu_items.append(edu)
-            if edu_items:
-                summary_parts.append(edu_text + "; ".join(edu_items))
-        
-        if resume.extracted_skills:
-            skills_text = f"Key Skills: {', '.join(resume.extracted_skills[:10])}"
-            summary_parts.append(skills_text)
-        
-        resume_summary = "\n\n".join(summary_parts)
-    
-    context = {
-        'has_resume': resume is not None,
-        'resume': resume,
-        'resume_summary': resume_summary,
-        'recommended_jobs': recommended_jobs
-    }
-    return render(request, 'core/cover_letter.html', context)
 
 @csrf_exempt
 def offer_analysis_view(request):
-    if request.method == "GET":
-        return render(request, "core/offer_analysis.html")
-
-    elif request.method == "POST":
+    """Offer letter analysis view"""
+    if request.method == 'GET':
+        return render(request, 'core/offer_analysis.html')
+    
+    elif request.method == 'POST':
         try:
-            offer_text = ""
-            offer_file = request.FILES.get("file")
+            # Get offer letter file or text
+            offer_file = request.FILES.get('offer_file')
+            offer_text = request.POST.get('offer_text', '').strip()
+            
+            if not offer_file and not offer_text:
+                return JsonResponse({
+                    "success": False,
+                    "message": "Please upload an offer letter file or paste the text"
+                })
+            
+            # Extract text from file if provided
+            extracted_text = ""
             if offer_file:
-                # Save file to temp
-                ext = os.path.splitext(offer_file.name)[1]
-                with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as temp:
+                # Save file temporarily
+                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(offer_file.name)[-1]) as temp_file:
                     for chunk in offer_file.chunks():
-                        temp.write(chunk)
-                    temp_path = temp.name
-
+                        temp_file.write(chunk)
+                    temp_file_path = temp_file.name
+                
                 try:
-                    offer_text = extract_text_from_file(temp_path)
+                    extracted_text = extract_text_from_file(temp_file_path)
                 finally:
-                    os.remove(temp_path)
-
-            elif "text" in request.POST:
-                offer_text = request.POST.get("text", "").strip()
-
-            if not offer_text:
-                return JsonResponse({"success": False, "message": "No offer letter text or file provided."})
-
-            # Call Gemini-based analysis
-            analysis = analyze_offer_letter_with_gemini(offer_text)
-
-            return JsonResponse({
-                "success": True,
-                "ctc": analysis.get("ctc", ""),
-                "probation_period": analysis.get("probation_period", ""),
-                "notice_period": analysis.get("notice_period", ""),
-                "risk_flags": analysis.get("risk_flags", []),
-                "explanation": analysis.get("summary", "Analysis complete."),
-                "negotiation_points": analysis.get("negotiation_points", []),
-                "questions_to_ask": analysis.get("questions_to_ask", []),
-                "compensation_analysis": analysis.get("compensation_analysis", ""),
-                "terms_analysis": analysis.get("terms_analysis", "")
-            })
-
+                    try:
+                        os.remove(temp_file_path)
+                    except:
+                        pass
+            else:
+                extracted_text = offer_text
+            
+            if not extracted_text:
+                return JsonResponse({
+                    "success": False,
+                    "message": "Could not extract text from the offer letter"
+                })
+            
+            # Analyze offer letter using AI
+            try:
+                analysis = analyze_offer_letter_with_gemini(extracted_text)
+                
+                # Save offer letter analysis
+                offer_letter = OfferLetter.objects.create(
+                    user=None,
+                    file=offer_file if offer_file else None,
+                    text=extracted_text if not offer_file else "",
+                    explanation=analysis.get('explanation', ''),
+                    risk_flags=analysis.get('risk_flags', []),
+                    ctc=analysis.get('ctc', ''),
+                    probation_period=analysis.get('probation_period', ''),
+                    notice_period=analysis.get('notice_period', '')
+                )
+                
+                return JsonResponse({
+                    "success": True,
+                    "analysis": {
+                        "explanation": analysis.get('explanation', ''),
+                        "risk_flags": analysis.get('risk_flags', []),
+                        "ctc": analysis.get('ctc', 'Not specified'),
+                        "probation_period": analysis.get('probation_period', 'Not specified'),
+                        "notice_period": analysis.get('notice_period', 'Not specified'),
+                        "benefits": analysis.get('benefits', []),
+                        "key_terms": analysis.get('key_terms', [])
+                    },
+                    "offer_letter_id": offer_letter.id
+                })
+                
+            except Exception as analysis_error:
+                logging.error(f"Offer analysis failed: {analysis_error}")
+                return JsonResponse({
+                    "success": False,
+                    "message": "Failed to analyze offer letter. Please try again."
+                })
+        
         except Exception as e:
             logging.exception("Offer analysis error")
-            return JsonResponse({"success": False, "message": f"Analysis failed: {e}"})
+            return JsonResponse({
+                "success": False,
+                "message": f"Error analyzing offer letter: {str(e)}"
+            })
 
+
+# Helper functions remain at the end
+def calculate_experience_match(resume, jd_text: str) -> int:
+    """Calculate experience match percentage"""
+    jd_lower = jd_text.lower()
+    
+    # Extract years from JD
+    import re
+    exp_patterns = [
+        r'(\d+)\+?\s*(?:years?|yrs?)\s+(?:of\s+)?experience',
+        r'experience\s+of\s+(\d+)\+?\s*(?:years?|yrs?)',
+        r'minimum\s+(\d+)\+?\s*(?:years?|yrs?)'
+    ]
+    required_years = 0
+    for pattern in exp_patterns:
+        match = re.search(pattern, jd_lower)
+        if match:
+            required_years = int(match.group(1))
+            break
+    
+    # Extract years from resume
+    resume_years = 0
+    if resume.experience:
+        for exp in resume.experience:
+            exp_str = str(exp).lower()
+            year_match = re.search(r'(\d+)\+?\s*(?:years?|yrs?)', exp_str)
+            if year_match:
+                resume_years = max(resume_years, int(year_match.group(1)))
+    
+    # Calculate match
+    if required_years == 0:
+        return 75
+    elif resume_years >= required_years:
+        return 100
+    elif resume_years >= required_years * 0.7:
+        return 80
+    elif resume_years >= required_years * 0.5:
+        return 60
     else:
-        return JsonResponse({"success": False, "message": "Only POST allowed."})
+        return max(30, int((resume_years / required_years) * 100))
 
-def dashboard(request):
-    """Dashboard view"""
-    return render(request, 'core/dashboard.html')
 
-def profile(request):
-    """User profile view"""
-    return render(request, 'core/profile.html')
+def calculate_education_match(resume, jd_text: str) -> int:
+    """Calculate education match percentage"""
+    jd_lower = jd_text.lower()
+    
+    education_keywords = {
+        'phd': ['phd', 'ph.d', 'doctorate', 'doctoral'],
+        'masters': ['masters', 'master', 'm.tech', 'mtech', 'm.sc', 'msc', 'mba', 'ms'],
+        'bachelors': ['bachelors', 'bachelor', 'b.tech', 'btech', 'b.sc', 'bsc', 'b.e', 'be', 'bca', 'bba'],
+        'diploma': ['diploma', 'associate']
+    }
+    
+    # Check required education
+    required_edu_level = 0
+    for level, keywords in education_keywords.items():
+        for keyword in keywords:
+            if keyword in jd_lower:
+                if level == 'phd':
+                    required_edu_level = 4
+                elif level == 'masters':
+                    required_edu_level = max(required_edu_level, 3)
+                elif level == 'bachelors':
+                    required_edu_level = max(required_edu_level, 2)
+                elif level == 'diploma':
+                    required_edu_level = max(required_edu_level, 1)
+    
+    # Check resume education
+    resume_edu_level = 0
+    if resume.education:
+        for edu in resume.education:
+            edu_str = str(edu).lower()
+            if any(k in edu_str for k in education_keywords['phd']):
+                resume_edu_level = 4
+            elif any(k in edu_str for k in education_keywords['masters']):
+                resume_edu_level = max(resume_edu_level, 3)
+            elif any(k in edu_str for k in education_keywords['bachelors']):
+                resume_edu_level = max(resume_edu_level, 2)
+            elif any(k in edu_str for k in education_keywords['diploma']):
+                resume_edu_level = max(resume_edu_level, 1)
+    
+    # Calculate match
+    if required_edu_level == 0:
+        return 80
+    elif resume_edu_level >= required_edu_level:
+        return 100
+    elif resume_edu_level == required_edu_level - 1:
+        return 70
+    elif resume_edu_level > 0:
+        return 50
+    else:
+        return 30

@@ -13714,3 +13714,26 @@ INFO 2025-12-13 23:57:58,042 job_search 5916 11840 Added 10 Indian jobs
 INFO 2025-12-13 23:57:58,049 job_search 5916 11840 Total unique jobs found: 10
 INFO 2025-12-13 23:57:58,052 views 5916 11840 Fetched 10 recommended jobs
 INFO 2025-12-13 23:57:58,055 views 5916 11840 Sample job: Tech Lead Databricks Data Engineer at Mitre Media
+INFO 2025-12-14 12:54:12,451 job_search 19872 10196 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-14 12:54:12,453 job_search 19872 10196 Searching for jobs with skills: java, spring boot in 15
+INFO 2025-12-14 12:54:13,403 job_search 19872 10196 Found 0 jobs from Remotive
+INFO 2025-12-14 12:54:13,406 job_search 19872 10196 No jobs found from Remotive
+INFO 2025-12-14 12:54:14,447 job_search 19872 10196 Found 3 jobs from Arbeitnow
+INFO 2025-12-14 12:54:14,449 job_search 19872 10196 Got 3 jobs from Arbeitnow
+INFO 2025-12-14 12:54:14,449 job_search 19872 10196 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-14 12:54:14,450 job_search 19872 10196 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-14 12:54:14,450 job_search 19872 10196 Returning 3 unique jobs after deduplication
+INFO 2025-12-14 12:54:14,450 job_search 19872 10196 Added 3 Indian jobs
+INFO 2025-12-14 12:54:14,451 job_search 19872 10196 Total unique jobs found: 3
+INFO 2025-12-14 12:54:35,671 job_search 19308 14104 JobSearchAPI initialized - All jobs will be fetched dynamically from live APIs
+INFO 2025-12-14 12:54:35,671 job_search 19308 14104 Searching for jobs with skills: python, django in 5
+INFO 2025-12-14 12:54:36,134 job_search 19308 14104 Found 1 jobs from Remotive
+INFO 2025-12-14 12:54:36,137 job_search 19308 14104 Got 1 jobs from Remotive
+INFO 2025-12-14 12:54:36,826 job_search 19308 14104 Found 2 jobs from Arbeitnow
+INFO 2025-12-14 12:54:36,828 job_search 19308 14104 Got 2 jobs from Arbeitnow
+INFO 2025-12-14 12:54:36,829 job_search 19308 14104 Adzuna API not configured (set ADZUNA_APP_ID and ADZUNA_API_KEY in .env)
+INFO 2025-12-14 12:54:36,829 job_search 19308 14104 Jooble API not configured (set JOOBLE_API_KEY in .env)
+INFO 2025-12-14 12:54:36,829 job_search 19308 14104 Returning 3 unique jobs after deduplication
+INFO 2025-12-14 12:54:36,829 job_search 19308 14104 Added 3 Indian jobs
+INFO 2025-12-14 12:54:36,829 job_search 19308 14104 Total unique jobs found: 3
+INFO 2025-12-14 13:12:54,127 job_search 7228 5576 JobSearchAPI: Using free APIs only (Remotive + Arbeitnow)

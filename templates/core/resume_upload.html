@@ -362,10 +362,8 @@ const PlacementPartner = {
         const firstChild = container.firstElementChild;
         container.insertBefore(alertDiv, firstChild);
         
-        // Scroll to alert
         alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         
-        // Auto-dismiss
         setTimeout(() => {
             alertDiv.classList.remove('show');
             setTimeout(() => alertDiv.remove(), 150);
@@ -375,7 +373,6 @@ const PlacementPartner = {
     formatSalary: function(min, max) {
         if (!min || !max) return 'Not specified';
         
-        // Convert to lakhs if in thousands
         const minLakhs = min >= 100000 ? (min / 100000).toFixed(1) : (min / 1000).toFixed(0);
         const maxLakhs = max >= 100000 ? (max / 100000).toFixed(1) : (max / 1000).toFixed(0);
         
@@ -388,7 +385,7 @@ const PlacementPartner = {
 };
 
 // ============================================================================
-// FILE UPLOAD HANDLERS
+// FILE UPLOAD HANDLERS - COMPLETELY FIXED
 // ============================================================================
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('resume-form');
@@ -399,73 +396,123 @@ document.addEventListener('DOMContentLoaded', function() {
     const dropText = document.getElementById('drop-text');
     const processingModal = new bootstrap.Modal(document.getElementById('processingModal'));
 
-    // Click to upload
-    fileUploadArea.addEventListener('click', function() {
+    let isFileSelected = false; // Track if file is already selected
+
+    // ============================================================================
+    // FIXED: Click to upload (prevent ALL double triggers)
+    // ============================================================================
+    fileUploadArea.addEventListener('click', function(e) {
+        // Prevent if file already selected or clicking on clear button
+        if (isFileSelected || e.target.closest('.btn-outline-danger')) {
+            return;
+        }
+        
+        // Only open dialog once
+        e.preventDefault();
+        e.stopPropagation();
         fileInput.click();
     });
 
+    // Prevent default behavior on file input click
+    fileInput.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // ============================================================================
     // Drag and drop
+    // ============================================================================
     fileUploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         fileUploadArea.classList.add('dragover');
     });
 
     fileUploadArea.addEventListener('dragleave', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         fileUploadArea.classList.remove('dragover');
     });
 
     fileUploadArea.addEventListener('drop', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         fileUploadArea.classList.remove('dragover');
         
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            fileInput.files = files;
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(files[0]);
+            fileInput.files = dataTransfer.files;
+            
             displaySelectedFile(files[0]);
-            textArea.value = ''; // Clear text area
+            textArea.value = '';
         }
     });
 
+    // ============================================================================
     // File input change
+    // ============================================================================
     fileInput.addEventListener('change', function(e) {
         if (e.target.files.length > 0) {
+            isFileSelected = true;
             displaySelectedFile(e.target.files[0]);
-            textArea.value = ''; // Clear text area
+            textArea.value = '';
+        } else {
+            isFileSelected = false;
         }
     });
 
+    // ============================================================================
     // Text area input
+    // ============================================================================
     textArea.addEventListener('input', function(e) {
         if (e.target.value.trim()) {
-            fileInput.value = ''; // Clear file input
-            fileList.innerHTML = ''; // Clear file display
+            fileInput.value = '';
+            fileList.innerHTML = '';
             dropText.style.display = 'block';
+            isFileSelected = false;
         }
     });
 
+    // ============================================================================
+    // Display selected file
+    // ============================================================================
     function displaySelectedFile(file) {
         dropText.style.display = 'none';
+        
+        let iconClass = 'fas fa-file-pdf text-danger';
+        if (file.type.includes('word')) {
+            iconClass = 'fas fa-file-word text-primary';
+        } else if (file.type.includes('document')) {
+            iconClass = 'fas fa-file-alt text-info';
+        }
+        
         fileList.innerHTML = `
             <div class="file-item">
                 <div class="d-flex align-items-center flex-grow-1">
-                    <i class="fas fa-file-pdf text-danger fa-2x"></i>
+                    <i class="${iconClass} fa-2x"></i>
                     <div class="ms-3">
                         <p class="mb-0 fw-bold">${file.name}</p>
                         <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
                     </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearFile()">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearFile(event)">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
         `;
     }
 
-    window.clearFile = function() {
+    // ============================================================================
+    // Clear file
+    // ============================================================================
+    window.clearFile = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
         fileInput.value = '';
         fileList.innerHTML = '';
         dropText.style.display = 'block';
+        isFileSelected = false;
     };
 
     // ============================================================================
@@ -474,15 +521,12 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
         e.preventDefault();
 
-        // Validate
         if (!validateResumeForm()) {
             return false;
         }
 
-        // Show modal
         processingModal.show();
 
-        // Animate progress
         const progressBar = document.querySelector('#processingModal .progress-bar');
         let progress = 0;
         const interval = setInterval(() => {
@@ -494,7 +538,6 @@ document.addEventListener('DOMContentLoaded', function() {
             progressBar.style.width = progress + '%';
         }, 300);
 
-        // Submit form
         const formData = new FormData(form);
 
         fetch('{% url "resume_upload" %}', {
@@ -515,7 +558,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success && data.data) {
                     PlacementPartner.showAlert('success', 'Resume uploaded and analyzed successfully!');
 
-                    // Show warning if any
                     if (data.warning) {
                         PlacementPartner.showAlert('warning', data.warning, 8000);
                     }
@@ -535,16 +577,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function validateResumeForm() {
-        // Check if either file or text provided
         if (!fileInput.files.length && !textArea.value.trim()) {
             PlacementPartner.showAlert('warning', 'Please upload a resume file or paste resume text.');
             return false;
         }
 
-        // Validate file if selected
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
-            const maxSize = 10 * 1024 * 1024; // 10MB
+            const maxSize = 10 * 1024 * 1024;
 
             if (file.size > maxSize) {
                 PlacementPartner.showAlert('danger', 'File size must be less than 10MB.');
@@ -572,20 +612,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function displayResults(data) {
         const d = data.data;
 
-        // Show results section
         document.getElementById('parsed-results').classList.remove('d-none');
 
-        // Personal info
         document.getElementById('result-name').value = d.name || 'Not extracted';
         document.getElementById('result-email').value = d.email || 'Not extracted';
         document.getElementById('result-phone').value = d.phone || 'Not extracted';
 
-        // Populate form fields
         if (d.name) document.getElementById('name').value = d.name;
         if (d.email) document.getElementById('email').value = d.email;
         if (d.phone) document.getElementById('phone').value = d.phone;
 
-        // Skills
         const skillsEl = document.getElementById('result-skills');
         skillsEl.innerHTML = '';
         const skills = d.skills || [];
@@ -602,12 +638,10 @@ document.addEventListener('DOMContentLoaded', function() {
             skillsEl.innerHTML = '<span class="text-muted">No skills extracted</span>';
         }
 
-        // ATS Score
         if (data.ats_analysis) {
             displayATSScore(data.ats_analysis);
         }
 
-        // Jobs
         if (data.recommended_jobs && data.recommended_jobs.length > 0) {
             displayJobs(data.recommended_jobs);
         } else {
@@ -617,7 +651,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('jobs-list').innerHTML = '';
         }
 
-        // Scroll to results
         setTimeout(() => {
             document.getElementById('parsed-results').scrollIntoView({ 
                 behavior: 'smooth', 
@@ -632,7 +665,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('ats-format-score').textContent = ats.format_score || '--';
         document.getElementById('ats-content-score').textContent = ats.content_score || '--';
 
-        // Set color
         const overallEl = document.getElementById('ats-overall-score');
         const score = parseInt(ats.ats_score) || 0;
         
@@ -642,7 +674,6 @@ document.addEventListener('DOMContentLoaded', function() {
             'text-danger'
         );
 
-        // Strengths
         const strengthsEl = document.getElementById('ats-strengths');
         strengthsEl.innerHTML = '';
         (ats.strengths || []).forEach(strength => {
@@ -652,7 +683,6 @@ document.addEventListener('DOMContentLoaded', function() {
             strengthsEl.appendChild(li);
         });
 
-        // Weaknesses
         const weaknessesEl = document.getElementById('ats-weaknesses');
         weaknessesEl.innerHTML = '';
         (ats.weaknesses || []).forEach(weakness => {
@@ -662,7 +692,6 @@ document.addEventListener('DOMContentLoaded', function() {
             weaknessesEl.appendChild(li);
         });
 
-        // Suggestions
         const suggestionsEl = document.getElementById('ats-suggestions');
         suggestionsEl.innerHTML = '';
         (ats.suggestions || []).forEach(suggestion => {
@@ -686,7 +715,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const card = document.createElement('div');
             card.className = 'card mb-3 job-card border-start border-success border-4';
             
-            // Format salary
             const salaryText = (job.salary_min && job.salary_max) 
                 ? PlacementPartner.formatSalary(job.salary_min, job.salary_max)
                 : '';

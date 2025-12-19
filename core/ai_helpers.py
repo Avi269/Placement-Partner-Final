@@ -40,14 +40,14 @@ SKILL_PATTERNS = [
 # RETRY HELPER WITH QUOTA DETECTION
 # ============================================================================
 
-def generate_with_retry(prompt: str, max_retries: int = 2, temperature: float = 0.7, max_tokens: int = 512):
+def generate_with_retry(prompt: str, max_retries: int = 2, temperature: float = 0.7, max_tokens: int = 1024):  # ✅ Changed from 512 to 1024
     """Helper function with retry logic and quota detection"""
     for attempt in range(max_retries):
         try:
             model = genai.GenerativeModel(settings.GEMINI_MODEL)
             generation_config = genai.types.GenerationConfig(
                 temperature=temperature,
-                max_output_tokens=max_tokens,
+                max_output_tokens=max_tokens,  # This controls the length
             )
             response = model.generate_content(prompt, generation_config=generation_config)
             

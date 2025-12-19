@@ -42,14 +42,15 @@
                                                 </h6>
                                             </div>
                                             <button class="btn btn-sm btn-primary ms-2" 
-                                                    onclick="loadJobToCoverLetter('{{ job.title|escapejs }}', '{{ job.company|escapejs }}', `{{ job.description|escapejs }}`)"
+                                                    onclick="loadJobToCoverLetter('{{ job.title|escapejs }}', '{{ job.company|escapejs }}', `{{ job.description|striptags|escapejs }}`)"
                                                     type="button">
                                                 <i class="fas fa-download me-1"></i>Load Job
                                             </button>
                                         </div>
                                         
+                                        <!-- ✅ FIXED: Display with striptags -->
                                         <p class="card-text small text-muted mb-2">
-                                            {{ job.description|truncatewords:30 }}
+                                            {{ job.description|striptags|truncatewords:30 }}
                                         </p>
                                         
                                         {% if job.skills %}
@@ -206,10 +207,15 @@
 // LOAD JOB TO FORM
 // ============================================================================
 function loadJobToCoverLetter(title, company, description) {
-    // Fill form fields
+    // ✅ Strip HTML tags from description
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = description;
+    const cleanDescription = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Fill form fields with CLEAN description
     document.getElementById('job_title').value = title;
     document.getElementById('company').value = company;
-    document.getElementById('job_description').value = description;
+    document.getElementById('job_description').value = cleanDescription;
     
     // Show success message
     showAlert('success', `✅ Job loaded: ${title} at ${company}`);

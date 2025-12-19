@@ -36,43 +36,67 @@ For production deployment:
 
 import os
 from pathlib import Path
+from decouple import config  # ✅ Add this import
 
-# ============================================================================
-# PATHS
-# ============================================================================
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 # BASE_DIR points to the project root directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ============================================================================
-# SECURITY SETTINGS
+# ENVIRONMENT VARIABLES - Load from .env
 # ============================================================================
 
-# SECURITY WARNING: Keep the secret key used in production secret!
-# Generate a new key for production: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-w)&i4unuq)698yz3hic2cn1dn$n8ez*clogt8io!1)p@8am%lj')
+# Security
+SECRET_KEY = config('SECRET_KEY')
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
-# SECURITY WARNING: Don't run with debug turned on in production!
-# Set DEBUG=False in production .env file
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+# Gemini AI Configuration
+GEMINI_API_KEY = config('GEMINI_API_KEY')
+GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.0-flash-exp')
 
-# Hosts allowed to access this Django application
-# In production, set to your domain: ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Job Search APIs
+ADZUNA_APP_ID = config('ADZUNA_APP_ID', default='')
+ADZUNA_API_KEY = config('ADZUNA_API_KEY', default='')
+RAPIDAPI_KEY = config('RAPIDAPI_KEY', default='')
+JSEARCH_API_KEY = config('JSEARCH_API_KEY', default='')
+
+# Email Configuration
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Cache Settings
+CACHE_TIMEOUT = config('CACHE_TIMEOUT', default=3600, cast=int)
+
+# Logging
+LOG_LEVEL = config('LOG_LEVEL', default='INFO')
+LOG_FILE = config('LOG_FILE', default='logs/app.log')
+
+# Feature Flags
+ENABLE_AI_RESUME_PARSING = config('ENABLE_AI_RESUME_PARSING', default=True, cast=bool)
+ENABLE_JOB_RECOMMENDATIONS = config('ENABLE_JOB_RECOMMENDATIONS', default=True, cast=bool)
+ENABLE_COVER_LETTER_GENERATION = config('ENABLE_COVER_LETTER_GENERATION', default=True, cast=bool)
+ENABLE_OFFER_ANALYSIS = config('ENABLE_OFFER_ANALYSIS', default=True, cast=bool)
+
+# ============================================================================
+# DJANGO SETTINGS (rest of your existing settings)
+# ============================================================================
 
 # Application definition
-
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "rest_framework",
-    "corsheaders",
-    "core",
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -239,16 +263,4 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
-}
-
-# Gemini AI Configuration
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
-
-# Cache Configuration (for AI-generated resources)
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'placement-partner-cache',
-        'TIMEOUT': 3600,  # 1 hour
-    }
 }

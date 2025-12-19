@@ -15,8 +15,20 @@ import requests
 import logging
 from typing import List, Dict
 import os
+import re
 
 logger = logging.getLogger(__name__)
+
+def strip_html_tags(text):
+    """Remove HTML tags from text"""
+    if not text:
+        return ""
+    # Remove HTML tags
+    clean = re.compile('<.*?>')
+    text = re.sub(clean, '', text)
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
 
 class JobSearchAPI:
     """Simplified job search with only 3 reliable APIs"""
@@ -116,7 +128,7 @@ class JobSearchAPI:
                     "title": job.get("title", ""),
                     "company": job.get("company_name", "Unknown"),
                     "location": "Remote (India-friendly)",
-                    "description": job.get("description", "")[:500],
+                    "description": strip_html_tags(job.get("description", ""))[:500],  # Clean HTML
                     "url": job.get("url", ""),
                     "salary_min": None,
                     "salary_max": None,
@@ -156,7 +168,7 @@ class JobSearchAPI:
                     "title": job.get("title", ""),
                     "company": job.get("company_name", "Unknown"),
                     "location": location,
-                    "description": job.get("description", "")[:500],
+                    "description": strip_html_tags(job.get("description", ""))[:500],  # Clean HTML
                     "url": job.get("url", ""),
                     "salary_min": None,
                     "salary_max": None,
@@ -199,7 +211,7 @@ class JobSearchAPI:
                 "title": job.get("title", ""),
                 "company": job.get("company", {}).get("display_name", "Unknown"),
                 "location": job.get("location", {}).get("display_name", "India"),
-                "description": job.get("description", "")[:500],
+                "description": strip_html_tags(job.get("description", ""))[:500],  # Clean HTML
                 "url": job.get("redirect_url", ""),
                 "salary_min": job.get("salary_min"),
                 "salary_max": job.get("salary_max"),

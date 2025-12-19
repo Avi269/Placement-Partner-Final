@@ -34,13 +34,28 @@ logger = logging.getLogger(__name__)
 # CONFIGURATION
 # ============================================================================
 
-# Configure Gemini
-API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-if not API_KEY:
-    raise ImproperlyConfigured("Gemini API key not found. Set GEMINI_API_KEY in .env")
+# Configure Gemini - Load from Django settings (which loads from .env)
+try:
+    API_KEY = settings.GEMINI_API_KEY
+except AttributeError:
+    raise ImproperlyConfigured(
+        "GEMINI_API_KEY not found in settings. "
+        "Ensure it's defined in .env and loaded in settings.py"
+    )
+
+if not API_KEY or API_KEY == "your-gemini-api-key-here":
+    raise ImproperlyConfigured(
+        "Gemini API key not configured properly. "
+        "Set GEMINI_API_KEY in .env file"
+    )
 
 genai.configure(api_key=API_KEY)
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+
+try:
+    GEMINI_MODEL = settings.GEMINI_MODEL
+except AttributeError:
+    GEMINI_MODEL = "gemini-2.0-flash-exp"
+    logger.warning(f"GEMINI_MODEL not in settings, using default: {GEMINI_MODEL}")
 
 # ============================================================================
 # IMPORT AI HELPERS (AFTER CONFIGURATION)
@@ -377,37 +392,49 @@ def generate_cover_letter_with_gemini(
     if not resume_text or not jd_text:
         raise ValidationError("Resume and job description are required.")
     
-    prompt = f"""
-You are a professional career advisor. Write a compelling cover letter.
+    # ✅ SIMPLIFIED prompt - gets to the point faster
+    prompt = f"""Write a professional cover letter for this job application. Use business letter format with 3-4 paragraphs (300-400 words total).
 
-Instructions:
-- Professional tone
-- Highlight relevant skills from resume that match job requirements
-- Show enthusiasm for the role
-- Keep it concise (250-350 words)
-- Format as a proper business letter
-{f"- Include this note: {custom_prompt}" if custom_prompt else ""}
+**Applicant:** {applicant_name or "[Your Name]"}
+**Email:** {applicant_email or "[Your Email]"}
+**Position:** {job_title}
+**Company:** {company_name}
 
-Applicant: {applicant_name or "[Your Name]"}
-Email: {applicant_email or "[Your Email]"}
-Job: {job_title or "the position"}
-Company: {company_name or "your organization"}
+**Resume Summary:**
+{resume_text[:600]}
 
-Resume excerpt:
-{resume_text[:1000]}
+**Job Description:**
+{jd_text[:600]}
 
-Job Description:
-{jd_text[:1000]}
+{f"**Special Instructions:** {custom_prompt}" if custom_prompt else ""}
 
-Write the cover letter:"""
+**Letter Requirements:**
+1. Opening: Express enthusiasm for the {job_title} role
+2. Body paragraph 1: Highlight 2-3 matching skills with examples
+3. Body paragraph 2: Show company knowledge and culture fit
+4. Closing: Request interview, thank reader, professional sign-off
+
+Write the complete letter now:"""
     
     try:
-        response = generate_with_retry(prompt, temperature=0.7, max_tokens=600)
+        response = generate_with_retry(prompt, temperature=0.7, max_tokens=2000)
         letter = response.text.strip()
+        
+        # Remove markdown code fences
         letter = re.sub(r'```[\w]*\n?', '', letter)
+        letter = re.sub(r'```\n?', '', letter)
+        
+        # Check length
+        word_count = len(letter.split())
+        logger.info(f"Generated cover letter: {word_count} words")
+        
+        if word_count < 50:
+            raise ValueError(f"Letter too short: {word_count} words")
+        
         return letter
+        
     except Exception as e:
-        logger.error(f"AI cover letter generation failed: {e}")
+        logger.error(f"Cover letter generation failed: {e}")
         raise ValidationError(f"Failed to generate cover letter: {str(e)}")
 
 
@@ -522,3 +549,104 @@ def calculate_user_readiness_score(resume_data: Dict) -> int:
     if resume_data.get("education"):
         score += len(resume_data["education"]) * 3
     return min(score, 100)
+
+
+# ============================================================================
+# ADDITIONAL FUNCTIONS
+# ============================================================================
+
+EMAIL_PATTERN = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+
+PHONE_PATTERNS = [
+    r'\+91[\s-]?\d{10}',
+    r'\d{10}',
+    r'\+\d{1,3}[\s-]?\d{9,12}'
+]
+
+SKILL_PATTERNS = [
+    r'\b(python|java|javascript|typescript|c\+\+|c#|ruby|php|swift|kotlin|scala|rust|go|perl|r|matlab)\b',
+    r'\b(react|angular|vue|node\.?js|django|flask|spring|express|laravel|rails|asp\.net|fastapi)\b',
+    r'\b(sql|mysql|postgresql|mongodb|oracle|redis|cassandra|dynamodb|sqlite|mariadb|elasticsearch)\b',
+    r'\b(aws|azure|gcp|docker|kubernetes|jenkins|terraform|ansible|ci/cd|devops)\b',
+    r'\b(machine learning|deep learning|tensorflow|pytorch|scikit-learn|pandas|numpy|keras|opencv)\b',
+    r'\b(git|github|gitlab|jira|confluence|slack|tableau|power bi|excel|linux|unix)\b',
+    r'\b(html|css|sass|scss|tailwind|bootstrap|material-ui|jquery)\b',
+    r'\b(rest|api|graphql|microservices|serverless|websocket|grpc)\b',
+]
+
+def enrich_parsed_resume(parsed_data: Dict, fallback_text: str = "") -> Dict:
+    """
+    Enrich parsed resume data using regex fallback when AI fails
+    
+    Args:
+        parsed_data: Dictionary with partial resume data
+        fallback_text: Raw text to extract from if fields are missing
+    
+    Returns:
+        Enriched dictionary with extracted fields
+    """
+    import re
+    
+    text = fallback_text or parsed_data.get('parsed_text', '')
+    
+    # Extract email if missing
+    if not parsed_data.get('email') and text:
+        email_match = re.search(EMAIL_PATTERN, text, re.IGNORECASE)
+        if email_match:
+            parsed_data['email'] = email_match.group(0)
+    
+    # Extract phone if missing
+    if not parsed_data.get('phone') and text:
+        for pattern in PHONE_PATTERNS:
+            phone_match = re.search(pattern, text)
+            if phone_match:
+                parsed_data['phone'] = phone_match.group(0)
+                break
+    
+    # Extract name if missing (first line that looks like a name)
+    if not parsed_data.get('name') and text:
+        name_match = re.search(r'^([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})$', text, re.MULTILINE)
+        if name_match:
+            parsed_data['name'] = name_match.group(1)
+    
+    # Extract skills if missing or empty
+    if not parsed_data.get('skills') or len(parsed_data.get('skills', [])) == 0:
+        skills = set()
+        for pattern in SKILL_PATTERNS:
+            matches = re.findall(pattern, text.lower(), re.IGNORECASE)
+            skills.update(matches)
+        parsed_data['skills'] = list(skills)[:30]
+    
+    # Extract education if missing
+    if not parsed_data.get('education') or len(parsed_data.get('education', [])) == 0:
+        education = re.findall(
+            r'(B\.?Tech|M\.?Tech|Bachelor|Master|MBA|MCA|BCA|BSc|MSc).*?(?:University|College|Institute)',
+            text,
+            re.IGNORECASE
+        )
+        parsed_data['education'] = education[:5]
+    
+    # Extract experience if missing (ONLY work experience, NOT education dates)
+    if not parsed_data.get('experience') or len(parsed_data.get('experience', [])) == 0:
+        # Look for job titles followed by company names
+        experience = re.findall(
+            r'((?:Software|Senior|Junior|Lead|Principal|Staff)?\s*(?:Engineer|Developer|Analyst|Manager|Architect|Designer|Consultant))\s+(?:at|@|-)\s+([A-Z][a-zA-Z0-9\s&.]+?)(?:\s+(?:from|since|\d{4}))',
+            text,
+            re.IGNORECASE
+        )
+        
+        experience_list = []
+        for title, company in experience[:5]:
+            # Clean up company name
+            company = company.strip()
+            # Remove common suffixes
+            company = re.sub(r'\s+(?:pvt|ltd|inc|llc|corp).*$', '', company, flags=re.IGNORECASE)
+            experience_list.append(f"{title.strip()} at {company}")
+        
+        parsed_data['experience'] = experience_list
+    
+    # Ensure parsed_text is included
+    if not parsed_data.get('parsed_text'):
+        parsed_data['parsed_text'] = text[:2000]
+    
+    return parsed_data

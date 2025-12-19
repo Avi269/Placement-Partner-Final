@@ -299,24 +299,45 @@ Job: {job_description[:800]}
 
 
 def _basic_job_fit(resume_text: str, jd_text: str) -> Dict:
-    """Basic keyword-based job fit"""
+    """Basic keyword-based job fit - IMPROVED"""
+    # Use the improved patterns from utils
+    from .utils import SKILL_PATTERNS, SKILL_BLACKLIST, are_skill_aliases
+    
     # Extract skills from both
     resume_skills = set()
     jd_skills = set()
     
     for pattern in SKILL_PATTERNS:
-        resume_skills.update(re.findall(pattern, resume_text.lower()))
-        jd_skills.update(re.findall(pattern, jd_text.lower()))
+        resume_matches = re.findall(pattern, resume_text.lower(), re.IGNORECASE)
+        jd_matches = re.findall(pattern, jd_text.lower(), re.IGNORECASE)
+        
+        # Process matches
+        for match in resume_matches:
+            skill = match if isinstance(match, str) else next((m for m in match if m), None)
+            if skill and skill not in SKILL_BLACKLIST:
+                resume_skills.add(skill.strip().lower())
+        
+        for match in jd_matches:
+            skill = match if isinstance(match, str) else next((m for m in match if m), None)
+            if skill and skill not in SKILL_BLACKLIST:
+                jd_skills.add(skill.strip().lower())
     
-    matching = resume_skills.intersection(jd_skills)
+    # Find matches considering aliases
+    matching = set()
+    for r_skill in resume_skills:
+        for j_skill in jd_skills:
+            if r_skill == j_skill or are_skill_aliases(r_skill, j_skill):
+                matching.add(r_skill)
+                break
+    
     missing = jd_skills - resume_skills
     
     fit_score = (len(matching) / len(jd_skills) * 100) if jd_skills else 0
     
     return {
         "fit_score": round(fit_score, 1),
-        "matching_skills": list(matching),
-        "missing_skills": list(missing),
+        "matching_skills": list(matching)[:20],
+        "missing_skills": list(missing)[:15],
         "strengths": [f"You have {len(matching)} matching skills"],
         "gaps": [f"Consider learning: {', '.join(list(missing)[:3])}"] if missing else [],
         "interview_readiness": "high" if fit_score > 70 else "medium" if fit_score > 40 else "low"

@@ -420,45 +420,17 @@
                         </div>
                         {% endfor %}
                     </div>
+
+                    <!-- Cover letter generator redirect Button -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-envelope me-2"></i>Generate Cover Letter
+                        </button>
+                    </div>
+
                 </div>
             </div>
             {% endif %}
-
-            <!-- Sample Jobs -->
-            <div class="card shadow-lg">
-                <div class="card-header bg-secondary text-white">
-                    <h4 class="mb-0">
-                        <i class="fas fa-lightbulb me-2"></i>Sample Job Descriptions
-                    </h4>
-                </div>
-                <div class="card-body p-4">
-                    <p class="text-muted mb-3">Try these samples to test the system:</p>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="card border">
-                                <div class="card-body">
-                                    <h6 class="card-title">Software Engineer</h6>
-                                    <p class="card-text small">Python, Django, React, AWS</p>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="loadSampleJob('software-engineer')">
-                                        Use This
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card border">
-                                <div class="card-body">
-                                    <h6 class="card-title">Data Scientist</h6>
-                                    <p class="card-text small">Python, ML, SQL, Pandas</p>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="loadSampleJob('data-scientist')">
-                                        Use This
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -527,41 +499,6 @@ const PlacementPartner = {
             tag.textContent = skill;
             container.appendChild(tag);
         });
-    }
-};
-
-// ============================================================================
-// SAMPLE JOB DATA
-// ============================================================================
-const sampleJobs = {
-    'software-engineer': {
-        title: 'Senior Software Engineer',
-        company: 'TechCorp Inc.',
-        description: `Requirements:
-- 5+ years experience in software development
-- Python, JavaScript, React
-- Django, AWS, Docker
-- SQL and database design
-- CI/CD pipelines
-
-Responsibilities:
-- Develop web applications
-- Mentor junior developers
-- Code reviews`
-    },
-    'data-scientist': {
-        title: 'Data Scientist',
-        company: 'DataTech Solutions',
-        description: `Requirements:
-- 3+ years data science experience
-- Python, R, SQL
-- Pandas, NumPy, Scikit-learn
-- Machine learning algorithms
-
-Responsibilities:
-- Develop predictive models
-- Analyze datasets
-- Data visualization`
     }
 };
 

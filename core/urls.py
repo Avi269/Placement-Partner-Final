@@ -12,14 +12,12 @@ router.register(r'skill-gap-report', views.SkillGapReportViewSet, basename='skil
 
 # URL patterns
 urlpatterns = [
-    # Template Views
+    # Template Views (Core functionality)
     path('', views.home, name='home'),
     path('resume/', views.resume_upload_view, name='resume_upload'),
     path('job-matching/', views.job_matching_view, name='job_matching'),
     path('cover-letter/', views.cover_letter_view, name='cover_letter'),
     path('offer-analysis/', views.offer_analysis_view, name='offer_analysis'),
-    path('dashboard/', views.dashboard, name='dashboard'),
-    path('profile/', views.profile, name='profile'),
 
     # API root
     path('api/', views.api_root, name='api-root'),
@@ -34,4 +32,4 @@ urlpatterns = [
     path('api/job/match/', views.SkillGapReportViewSet.as_view({'post': 'match'}), name='job-match'),
     path('api/skills/gaps/', views.SkillGapReportViewSet.as_view({'get': 'gaps'}), name='skills-gaps'),
     path('api/offer/explain/', views.OfferLetterViewSet.as_view({'post': 'explain'}), name='offer-explain'),
-] 
+]

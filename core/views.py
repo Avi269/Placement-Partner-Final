@@ -24,6 +24,7 @@ import os
 import json
 import logging
 import re
+from typing import List, Dict, Tuple, Optional  # ✅ ADD THIS LINE
 
 # Third-party imports
 import google.generativeai as genai
@@ -472,15 +473,6 @@ def resume_upload_view(request):
                     
                     # Fallback: Use enrichment
                     from .utils import enrich_parsed_resume
-                    parsed_data = {
-                        "name": name,
-                        "email": email,
-                        "phone": phone,
-                        "parsed_text": parsed_text,
-                        "skills": [],
-                        "education": [],
-                        "experience": []
-                    }
                     parsed_data = enrich_parsed_resume(parsed_data, fallback_text=parsed_text)
                     logging.info(f"Fallback enrichment complete: name={parsed_data.get('name')}, email={parsed_data.get('email')}, skills={len(parsed_data.get('skills', []))}")
 
@@ -661,52 +653,50 @@ def job_matching_view(request):
                     "message": "Please provide a job description"
                 })
             
-            logging.info(f"Job matching request received. JD length: {len(jd_text)}")
+            logging.info(f"📋 Job matching request - JD length: {len(jd_text)}")
+            logging.info(f"📋 JD preview: {jd_text[:200]}...")
 
             # Get resume from session
             resume_id = request.session.get("resume_id")
-            logging.info(f"Session resume_id: {resume_id}")
             resume = Resume.objects.filter(id=resume_id).first() if resume_id else None
 
             if not resume:
-                logging.warning("No resume found for job matching")
                 return JsonResponse({
                     "success": False, 
                     "message": "No resume found. Please upload your resume first."
                 })
 
             if not resume.extracted_skills:
-                logging.warning("Resume has no extracted skills")
                 return JsonResponse({
                     "success": False,
-                    "message": "Your resume has no extracted skills. Please re-upload with a better formatted resume."
+                    "message": "Your resume has no extracted skills. Please re-upload."
                 })
             
-            logging.info(f"Resume skills ({len(resume.extracted_skills)}): {resume.extracted_skills[:10]}")
+            logging.info(f"👤 Resume skills ({len(resume.extracted_skills)}): {resume.extracted_skills}")
             
-            # Calculate job fit (has built-in fallback)
+            # Use improved fallback
             try:
-                fit_score, matching_skills, missing_skills = calculate_job_fit_with_gemini(
-                    resume.extracted_skills,
-                    jd_text
-                )
-                logging.info(f"✅ Job fit calculated: {fit_score}% (matching: {len(matching_skills)}, missing: {len(missing_skills)})")
-            except Exception as match_error:
-                logging.error(f"Job matching completely failed: {match_error}")
-                # Last resort fallback
                 fit_score, matching_skills, missing_skills = calculate_job_fit_with_fallback(
                     resume.extracted_skills,
                     jd_text
                 )
-                logging.info(f"✅ Fallback job fit: {fit_score}%")
+                logging.info(f"✅ Match: {fit_score}% | Matching: {len(matching_skills)} | Missing: {len(missing_skills)}")
+                logging.info(f"   Matching skills: {matching_skills}")
+                logging.info(f"   Missing skills: {missing_skills[:5]}")
+            except Exception as match_error:
+                logging.error(f"❌ Matching failed: {match_error}", exc_info=True)
+                return JsonResponse({
+                    "success": False,
+                    "message": "Failed to analyze job match. Please try again."
+                })
             
-            # Ensure we have at least some data
+            # ✅ VALIDATE WE GOT MEANINGFUL RESULTS
             if not matching_skills and not missing_skills:
-                logging.warning("Both matching and missing skills are empty, creating defaults")
-                # If everything failed, at least show resume skills
-                matching_skills = resume.extracted_skills[:10]
-                missing_skills = ["Technical Skills", "Communication", "Problem Solving"]
-                fit_score = 50.0
+                logging.warning("Both skills lists empty - JD may not contain tech requirements")
+                # Show user's skills but indicate low match
+                matching_skills = []
+                missing_skills = []
+                fit_score = 20.0
             
             # Calculate experience match
             experience_match = calculate_experience_match(resume, jd_text)
@@ -714,7 +704,7 @@ def job_matching_view(request):
             # Calculate education match
             education_match = calculate_education_match(resume, jd_text)
             
-            # Get learning resources for missing skills
+            # Get learning resources for missing skills (only if we have missing skills)
             learning_resources = []
             if missing_skills:
                 try:
@@ -722,29 +712,7 @@ def job_matching_view(request):
                     logging.info(f"✅ Generated {len(learning_resources)} learning resource groups")
                 except Exception as lr_error:
                     logging.error(f"Learning resources failed: {lr_error}")
-                    # Fallback: Generate basic YouTube links
-                    learning_resources = [
-                        {
-                            "skill": skill,
-                            "resources": [
-                                {
-                                    "title": f"Learn {skill} - YouTube Tutorials",
-                                    "url": f"https://www.youtube.com/results?search_query={skill.replace(' ', '+')}+tutorial+2024",
-                                    "type": "Video",
-                                    "description": f"Comprehensive video tutorials on {skill}",
-                                    "duration": "Varies"
-                                },
-                                {
-                                    "title": f"{skill} Documentation",
-                                    "url": f"https://www.google.com/search?q={skill.replace(' ', '+')}+official+documentation",
-                                    "type": "Documentation",
-                                    "description": f"Official documentation and guides",
-                                    "duration": "Self-paced"
-                                }
-                            ]
-                        }
-                        for skill in missing_skills[:5]
-                    ]
+                    learning_resources = _generate_fallback_resources(missing_skills[:5])
 
             # Fetch recommended jobs
             recommended_jobs = []
@@ -794,6 +762,31 @@ def job_matching_view(request):
                 "message": f"Error analyzing job match: {str(e)}"
             })
 
+
+def _generate_fallback_resources(skills: List[str]) -> List[Dict]:
+    """Generate basic learning resources as fallback"""
+    resources = []
+    for skill in skills:
+        resources.append({
+            "skill": skill,
+            "resources": [
+                {
+                    "title": f"Learn {skill} on YouTube",
+                    "url": f"https://www.youtube.com/results?search_query={skill.replace(' ', '+')}+tutorial",
+                    "type": "Video",
+                    "description": f"Free video tutorials on {skill}",
+                    "duration": "Varies"
+                },
+                {
+                    "title": f"{skill} on freeCodeCamp",
+                    "url": f"https://www.freecodecamp.org/news/search/?query={skill.replace(' ', '%20')}",
+                    "type": "Article",
+                    "description": f"Free articles and guides",
+                    "duration": "Self-paced"
+                }
+            ]
+        })
+    return resources
 
 @csrf_exempt
 def cover_letter_view(request):
@@ -1030,8 +1023,7 @@ def calculate_experience_match(resume, jd_text):
     try:
         experience_years = 0
         if resume.experience:
-            # Try to extract years from experience entries
-            import re
+            # Extract years from experience entries
             for exp in resume.experience:
                 years_match = re.search(r'(\d+)\+?\s*(?:years?|yrs?)', str(exp), re.IGNORECASE)
                 if years_match:
@@ -1056,7 +1048,7 @@ def calculate_experience_match(resume, jd_text):
             return 40
             
     except Exception as e:
-        logging.error(f"Experience match calculation failed: {e}")
+        logging.error(f"Experience match calculation failed: {e}", exc_info=True)  # ✅ Add exc_info
         return 70  # Default
 
 

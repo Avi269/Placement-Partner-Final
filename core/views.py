@@ -946,9 +946,9 @@ def offer_analysis_view(request):
     
     elif request.method == 'POST':
         try:
-            # Handle file upload
-            offer_file = request.FILES.get('offer_file')
-            offer_text = request.POST.get('offer_text', '').strip()
+            # ✅ FIX: Changed from 'offer_file' to 'file' to match HTML form
+            offer_file = request.FILES.get('file')  # Changed from 'offer_file'
+            offer_text = request.POST.get('text', '').strip()  # Changed from 'offer_text'
             
             if not offer_file and not offer_text:
                 return JsonResponse({
@@ -1002,7 +1002,10 @@ def offer_analysis_view(request):
                     'probation_period': analysis.get('probation_period', 'Not specified'),
                     'notice_period': analysis.get('notice_period', 'Not specified'),
                     'risk_flags': analysis.get('risk_flags', []),
-                    'key_points': analysis.get('key_points', [])
+                    'compensation_analysis': analysis.get('compensation_analysis', 'Not available'),
+                    'terms_analysis': analysis.get('terms_analysis', 'Not available'),
+                    'negotiation_points': analysis.get('negotiation_points', []),
+                    'questions_to_ask': analysis.get('questions_to_ask', [])
                 },
                 'offer_id': offer_letter.id
             })

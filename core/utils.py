@@ -589,88 +589,405 @@ Write the complete letter now:"""
 # ============================================================================
 
 def analyze_offer_letter_with_gemini(offer_text: str) -> Dict:
-    """Analyze offer letter using AI"""
+    """Analyze offer letter using AI with robust JSON parsing"""
     if not offer_text:
         raise ValidationError("Offer letter text is required.")
     
+    # ✅ IMPROVED: More explicit JSON requirements
     prompt = f"""
-You are an HR analyst. Analyze this job offer letter comprehensively.
+Analyze this job offer letter and extract key information.
 
-Return JSON with:
+You MUST respond with ONLY valid JSON in this exact format (no explanations before or after):
+
 {{
-  "ctc": "Annual compensation",
-  "probation_period": "Probation duration",
-  "notice_period": "Notice period",
-  "risk_flags": ["Concerning terms"],
-  "summary": "2-3 sentence summary",
-  "compensation_analysis": "Salary analysis",
-  "terms_analysis": "Contract terms analysis",
-  "negotiation_points": ["Negotiation items"],
-  "questions_to_ask": ["Clarification questions"]
+  "ctc": "Annual salary amount with currency",
+  "probation_period": "Duration in months",
+  "notice_period": "Duration in days/months",
+  "risk_flags": ["List of concerning terms found"],
+  "explanation": "Brief 2-3 sentence summary of the offer",
+  "compensation_analysis": "Analysis of salary, bonuses, benefits",
+  "terms_analysis": "Analysis of employment terms and conditions",
+  "negotiation_points": ["List of items you could negotiate"],
+  "questions_to_ask": ["List of clarifying questions to ask employer"]
 }}
 
-Offer Letter:
-{offer_text[:2500]}
-"""
+RULES:
+1. Return ONLY the JSON object, no markdown, no code fences, no explanations
+2. All string values must be in quotes
+3. All arrays must contain at least one item or be empty []
+4. If information is missing, use "Not specified" for strings or [] for arrays
+5. Keep all text concise and professional
+
+Offer Letter Text (first 2000 chars):
+{offer_text[:2000]}
+
+JSON Response:"""
     
     try:
-        response = generate_with_retry(prompt, temperature=0.2, max_tokens=800)
+        response = generate_with_retry(prompt, temperature=0.1, max_tokens=1500, max_retries=2)
         raw = response.text.strip()
-        raw = re.sub(r'```json\n?', '', raw)
-        raw = re.sub(r'```\n?', '', raw)
         
-        analysis = json.loads(raw)
+        logger.info(f"Raw AI response (first 200 chars): {raw[:200]}")
         
+        # ✅ IMPROVED: Better cleaning of response
+        # Remove markdown code fences
+        raw = re.sub(r'^```(?:json)?\s*', '', raw, flags=re.MULTILINE)
+        raw = re.sub(r'\s*```$', '', raw, flags=re.MULTILINE)
+        
+        # Remove any text before first {
+        json_start = raw.find('{')
+        if json_start > 0:
+            raw = raw[json_start:]
+        
+        # Remove any text after last }
+        json_end = raw.rfind('}')
+        if json_end > 0:
+            raw = raw[:json_end + 1]
+        
+        logger.info(f"Cleaned response (first 200 chars): {raw[:200]}")
+        
+        # Try to parse JSON
+        try:
+            analysis = json.loads(raw)
+        except json.JSONDecodeError as je:
+            logger.error(f"JSON parsing failed at position {je.pos}: {je.msg}")
+            logger.error(f"Problematic section: ...{raw[max(0, je.pos-50):je.pos+50]}...")
+            
+            # ✅ FALLBACK: Try to extract data with regex
+            logger.warning("Falling back to regex extraction")
+            analysis = _extract_offer_data_with_regex(offer_text)
+        
+        # ✅ Ensure all required fields exist with proper defaults
         defaults = {
             "ctc": "Not specified",
-            "probation_period": "Not specified",
+            "probation_period": "Not specified", 
             "notice_period": "Not specified",
             "risk_flags": [],
-            "summary": "Offer analysis completed.",
-            "compensation_analysis": "No details found.",
-            "terms_analysis": "No details found.",
-            "negotiation_points": [],
-            "questions_to_ask": []
+            "explanation": "Offer letter has been uploaded and is ready for review.",
+            "compensation_analysis": "Unable to extract detailed compensation information.",
+            "terms_analysis": "Unable to extract detailed terms and conditions.",
+            "negotiation_points": ["Request clarification on any unclear terms"],
+            "questions_to_ask": ["What are the performance evaluation criteria?", "What benefits are included?"]
         }
         
         for key, default in defaults.items():
             if key not in analysis or not analysis[key]:
                 analysis[key] = default
         
+        logger.info(f"✅ Offer analysis complete: CTC={analysis['ctc']}, Risks={len(analysis['risk_flags'])}")
         return analysis
+        
     except Exception as e:
-        logger.error(f"AI offer analysis failed: {e}")
-        raise ValidationError(f"Failed to analyze offer: {str(e)}")
+        logger.error(f"AI offer analysis failed completely: {e}", exc_info=True)
+        # ✅ Return fallback analysis instead of raising error
+        return _extract_offer_data_with_regex(offer_text)
 
+
+def _extract_offer_data_with_regex(offer_text: str) -> Dict:
+    """
+    Fallback: Extract basic offer data using regex patterns
+    """
+    logger.info("📋 Using regex-based offer extraction")
+    
+    analysis = {
+        "ctc": "Not specified",
+        "probation_period": "Not specified",
+        "notice_period": "Not specified",
+        "risk_flags": [],
+        "explanation": "Basic offer information extracted.",
+        "compensation_analysis": "No detailed compensation analysis available.",
+        "terms_analysis": "No detailed terms analysis available.",
+        "negotiation_points": [],
+        "questions_to_ask": []
+    }
+    
+    text_lower = offer_text.lower()
+    
+    # Extract CTC/Salary
+    ctc_patterns = [
+        r'(?:ctc|salary|compensation|annual package)[\s:]+(?:is\s+)?(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d+)?)\s*(?:lpa|lakhs?|per annum|annually)?',
+        r'(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)\s*(?:lpa|lakhs?|per annum)',
+        r'([\d,]+(?:\.\d+)?)\s*(?:lpa|lakhs? per annum)',
+    ]
+    for pattern in ctc_patterns:
+        match = re.search(pattern, text_lower)
+        if match:
+            amount = match.group(1).replace(',', '')
+            analysis['ctc'] = f"₹{amount} LPA"
+            break
+    
+    # Extract Probation Period
+    probation_patterns = [
+        r'probation(?:ary)?\s+period[\s:]+(?:of\s+)?([\d]+)\s*(months?|days?)',
+        r'([\d]+)\s*months?\s+probation',
+    ]
+    for pattern in probation_patterns:
+        match = re.search(pattern, text_lower)
+        if match:
+            duration = match.group(1)
+            unit = match.group(2) if len(match.groups()) > 1 else 'months'
+            analysis['probation_period'] = f"{duration} {unit}"
+            break
+    
+    # Extract Notice Period
+    notice_patterns = [
+        r'notice\s+period[\s:]+(?:of\s+)?([\d]+)\s*(months?|days?)',
+        r'([\d]+)\s*(?:months?|days?)\s+notice',
+    ]
+    for pattern in notice_patterns:
+        match = re.search(pattern, text_lower)
+        if match:
+            duration = match.group(1)
+            unit = match.group(2) if len(match.groups()) > 1 else 'days'
+            analysis['notice_period'] = f"{duration} {unit}"
+            break
+    
+    # Check for common risk flags
+    risk_keywords = [
+        ('bond', 'Contains service bond requirement'),
+        ('penalty', 'Mentions penalties or fines'),
+        ('non-compete', 'Non-compete clause present'),
+        ('no paid leave', 'Limited or no paid leave mentioned'),
+        ('unpaid', 'Contains unpaid work provisions'),
+    ]
+    
+    for keyword, flag in risk_keywords:
+        if keyword in text_lower:
+            analysis['risk_flags'].append(flag)
+    
+    # Generate basic recommendations
+    if analysis['ctc'] != "Not specified":
+        analysis['compensation_analysis'] = f"The offered CTC is {analysis['ctc']}. Consider researching industry standards for this role."
+    
+    if analysis['probation_period'] != "Not specified":
+        analysis['terms_analysis'] = f"Probation period is {analysis['probation_period']}. "
+    if analysis['notice_period'] != "Not specified":
+        analysis['terms_analysis'] += f"Notice period is {analysis['notice_period']}."
+    
+    analysis['negotiation_points'] = [
+        "Salary and variable pay components",
+        "Work from home policy",
+        "Learning and development budget",
+        "Health insurance coverage"
+    ]
+    
+    analysis['questions_to_ask'] = [
+        "What is the salary breakup (fixed vs variable)?",
+        "What are the performance review cycles?",
+        "What benefits are included besides salary?",
+        "What is the company's work culture like?",
+        "Are there opportunities for career growth?"
+    ]
+    
+    logger.info(f"✅ Regex extraction complete: CTC={analysis['ctc']}, Probation={analysis['probation_period']}")
+    return analysis
 
 # ============================================================================
 # ATS SCORING - AI
 # ============================================================================
 
 def calculate_ats_score(resume_text: str, skills: List[str]) -> Dict:
-    """Calculate ATS score using AI"""
+    """Calculate ATS score using AI with detailed analysis"""
     try:
-        result = optimize_resume_with_ai(resume_text, "")
-        return {
-            "ats_score": result.get("ats_score", 70),
-            "keyword_match": 75,
-            "format_score": 75,
-            "content_score": 70,
-            "strengths": ["Resume analyzed"],
-            "weaknesses": ["Add more keywords"],
-            "suggestions": result.get("action_items", [])
-        }
+        # ✅ IMPROVED: More detailed prompt for better analysis
+        prompt = f"""
+Analyze this resume for ATS (Applicant Tracking System) compatibility.
+
+Return ONLY valid JSON in this exact format:
+{{
+  "ats_score": 75,
+  "keyword_match": 80,
+  "format_score": 70,
+  "content_score": 75,
+  "strengths": [
+    "Clear skills section with {len(skills)} technical skills",
+    "Professional experience with measurable achievements",
+    "Clean, ATS-friendly formatting"
+  ],
+  "weaknesses": [
+    "Missing specific metrics in some job descriptions",
+    "Could add more industry keywords"
+  ],
+  "suggestions": [
+    "Add quantifiable achievements (e.g., 'Improved performance by 40%')",
+    "Include more action verbs at the start of bullet points",
+    "Add relevant certifications if available"
+  ]
+}}
+
+Resume excerpt (first 1200 chars):
+{resume_text[:1200]}
+
+Identified Skills: {', '.join(skills[:15])}
+
+Provide specific, actionable feedback based on the actual content."""
+
+        response = generate_with_retry(prompt, temperature=0.3, max_tokens=800, max_retries=2)
+        raw = response.text.strip()
+        
+        # Clean response
+        raw = re.sub(r'^```(?:json)?\s*', '', raw, flags=re.MULTILINE)
+        raw = re.sub(r'\s*```$', '', raw, flags=re.MULTILINE)
+        
+        # Extract JSON
+        json_start = raw.find('{')
+        if json_start > 0:
+            raw = raw[json_start:]
+        json_end = raw.rfind('}')
+        if json_end > 0:
+            raw = raw[:json_end + 1]
+        
+        result = json.loads(raw)
+        
+        # ✅ Validate that we got meaningful data
+        if not result.get('strengths') or not result.get('weaknesses'):
+            logger.warning("AI returned empty analysis, using enhanced fallback")
+            raise ValueError("Insufficient analysis data")
+        
+        logger.info(f"✅ ATS analysis complete: {result.get('ats_score')}%, {len(result.get('strengths', []))} strengths, {len(result.get('weaknesses', []))} weaknesses")
+        return result
+        
     except Exception as e:
-        logger.error(f"AI ATS scoring failed: {e}")
-        return {
-            "ats_score": 70,
-            "keyword_match": 70,
-            "format_score": 70,
-            "content_score": 70,
-            "strengths": [],
-            "weaknesses": [],
-            "suggestions": []
-        }
+        logger.error(f"AI ATS scoring failed: {e}, using enhanced fallback")
+        return _calculate_ats_score_fallback(resume_text, skills)
+
+
+def _calculate_ats_score_fallback(resume_text: str, skills: List[str]) -> Dict:
+    """Enhanced fallback ATS scoring with detailed analysis"""
+    logger.info("📊 Using enhanced fallback ATS scoring")
+    
+    text_lower = resume_text.lower()
+    word_count = len(resume_text.split())
+    
+    # Calculate scores
+    keyword_score = 70
+    format_score = 75
+    content_score = 70
+    
+    strengths = []
+    weaknesses = []
+    suggestions = []
+    
+    # ✅ ANALYZE SKILLS
+    if len(skills) >= 10:
+        keyword_score += 15
+        strengths.append(f"Strong technical skills section with {len(skills)} skills listed")
+    elif len(skills) >= 5:
+        keyword_score += 10
+        strengths.append(f"Good skills section with {len(skills)} technical skills")
+    else:
+        keyword_score -= 10
+        weaknesses.append(f"Limited skills listed ({len(skills)} found) - add more relevant technical skills")
+        suggestions.append("Add more specific technical skills relevant to your target role")
+    
+    # ✅ ANALYZE CONTACT INFO
+    has_email = bool(re.search(EMAIL_PATTERN, resume_text, re.IGNORECASE))
+    has_phone = any(re.search(pattern, resume_text) for pattern in PHONE_PATTERNS)
+    
+    if has_email and has_phone:
+        format_score += 10
+        strengths.append("Complete contact information provided")
+    else:
+        format_score -= 15
+        weaknesses.append("Missing contact information (email or phone)")
+        suggestions.append("Ensure email and phone number are clearly visible at the top")
+    
+    # ✅ ANALYZE EXPERIENCE SECTION
+    experience_keywords = ['experience', 'work history', 'employment', 'professional experience']
+    has_experience_section = any(keyword in text_lower for keyword in experience_keywords)
+    
+    if has_experience_section:
+        content_score += 10
+        strengths.append("Clear work experience section present")
+        
+        # Check for quantifiable achievements
+        achievement_patterns = [r'\d+%', r'\d+ users', r'\d+ projects', r'increased', r'improved', r'reduced', r'achieved']
+        achievements_count = sum(1 for pattern in achievement_patterns if re.search(pattern, text_lower))
+        
+        if achievements_count >= 3:
+            content_score += 10
+            strengths.append("Good use of quantifiable achievements")
+        else:
+            weaknesses.append("Limited quantifiable achievements - add metrics to demonstrate impact")
+            suggestions.append("Add numbers and percentages (e.g., 'Improved performance by 40%', 'Managed team of 5')")
+    else:
+        content_score -= 15
+        weaknesses.append("No clear work experience section found")
+        suggestions.append("Add a dedicated 'Work Experience' or 'Professional Experience' section")
+    
+    # ✅ ANALYZE ACTION VERBS
+    action_verbs = ['developed', 'created', 'managed', 'led', 'implemented', 'designed', 'built', 'improved', 'optimized', 'delivered']
+    action_verb_count = sum(1 for verb in action_verbs if verb in text_lower)
+    
+    if action_verb_count >= 5:
+        content_score += 10
+        strengths.append("Strong use of action verbs in descriptions")
+    elif action_verb_count < 3:
+        weaknesses.append("Limited use of impactful action verbs")
+        suggestions.append("Start bullet points with strong action verbs (Developed, Led, Implemented, etc.)")
+    
+    # ✅ ANALYZE LENGTH
+    if 300 <= word_count <= 800:
+        format_score += 5
+        strengths.append("Resume length is appropriate for ATS parsing")
+    elif word_count < 200:
+        format_score -= 10
+        weaknesses.append("Resume appears too brief - may lack sufficient detail")
+        suggestions.append("Expand on your experience and achievements")
+    elif word_count > 1000:
+        format_score -= 5
+        weaknesses.append("Resume may be too lengthy - consider condensing")
+        suggestions.append("Focus on most relevant and recent experience")
+    
+    # ✅ ANALYZE EDUCATION
+    if 'education' in text_lower or 'degree' in text_lower or 'university' in text_lower:
+        content_score += 5
+        strengths.append("Education section included")
+    else:
+        weaknesses.append("No education section found")
+        suggestions.append("Add your educational qualifications")
+    
+    # ✅ CHECK FOR COMMON ATS ISSUES
+    problematic_chars = ['→', '•', '★', '◆']
+    if any(char in resume_text for char in problematic_chars):
+        format_score -= 5
+        weaknesses.append("Special characters detected that may not parse well in ATS")
+        suggestions.append("Use standard bullet points (•) and avoid fancy symbols")
+    
+    # Cap scores
+    keyword_score = max(40, min(100, keyword_score))
+    format_score = max(40, min(100, format_score))
+    content_score = max(40, min(100, content_score))
+    
+    # Calculate overall score (weighted average)
+    overall_score = int((keyword_score * 0.4) + (format_score * 0.3) + (content_score * 0.3))
+    
+    # ✅ Ensure we always have some content
+    if not strengths:
+        strengths = ["Resume successfully uploaded and analyzed", f"{len(skills)} technical skills identified"]
+    
+    if not weaknesses:
+        weaknesses = ["Continue to refine and update your resume regularly"]
+    
+    if not suggestions:
+        suggestions = [
+            "Keep your resume updated with your latest skills and experience",
+            "Tailor your resume for each job application",
+            "Use keywords from the job description"
+        ]
+    
+    logger.info(f"✅ Fallback ATS score: {overall_score}% (Keywords: {keyword_score}, Format: {format_score}, Content: {content_score})")
+    logger.info(f"   Strengths: {len(strengths)}, Weaknesses: {len(weaknesses)}, Suggestions: {len(suggestions)}")
+    
+    return {
+        "ats_score": overall_score,
+        "keyword_match": keyword_score,
+        "format_score": format_score,
+        "content_score": content_score,
+        "strengths": strengths[:10],  # Limit to top 10
+        "weaknesses": weaknesses[:8],  # Limit to top 8
+        "suggestions": suggestions[:10]  # Limit to top 10
+    }
 
 
 # ============================================================================

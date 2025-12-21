@@ -15,27 +15,21 @@
 
             <!-- Analysis Form -->
             <div class="card shadow-lg mb-4">
-                <div class="card-header">
+                <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">
                         <i class="fas fa-file-contract me-2"></i>Analyze Offer Letter
                     </h4>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post" enctype="multipart/form-data" data-validate="true" id="offer-analysis-form">
+                    <form method="post" enctype="multipart/form-data" id="offer-analysis-form">
                         {% csrf_token %}
                         
                         <!-- File Upload Area -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Upload Offer Letter</label>
-                            <div class="file-upload-area" id="file-upload-area">
-                                <input type="file" name="file" id="offer-file" accept=".pdf,.docx,.doc,.txt" class="d-none">
-                                <div class="drop-text">
-                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                                    <h5>Drag & Drop your offer letter here</h5>
-                                    <p class="text-muted mb-3">or click to browse files</p>
-                                    <p class="small text-muted">Supported formats: PDF, DOCX, DOC, TXT (Max 10MB)</p>
-                                </div>
-                                <div class="file-list mt-3"></div>
+                            <div class="border rounded p-4 text-center" style="background-color: #f8f9fa;">
+                                <input type="file" name="file" id="offer-file" accept=".pdf,.docx,.doc,.txt" class="form-control" required>
+                                <small class="text-muted d-block mt-2">Supported formats: PDF, DOCX, DOC, TXT (Max 10MB)</small>
                             </div>
                         </div>
 
@@ -52,14 +46,6 @@
                                       placeholder="Paste your offer letter text here if you don't have a file..."></textarea>
                         </div>
 
-                        <!-- Additional Context -->
-                        <div class="mb-4">
-                            <label for="context" class="form-label fw-bold">Additional Context (Optional)</label>
-                            <textarea name="context" id="context" class="form-control" rows="3" 
-                                      placeholder="Any additional information about the role, company, or your expectations..."></textarea>
-                            <div class="form-text">This helps provide more personalized analysis and recommendations.</div>
-                        </div>
-
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-search me-2"></i>Analyze Offer Letter
@@ -73,29 +59,29 @@
             <div id="analysis-results" class="d-none">
                 <!-- Key Information -->
                 <div class="card shadow-lg mb-4">
-                    <div class="card-header">
+                    <div class="card-header bg-info text-white">
                         <h4 class="mb-0">
                             <i class="fas fa-info-circle me-2"></i>Key Information
                         </h4>
                     </div>
                     <div class="card-body p-4">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="stats-card">
-                                    <div class="stats-number" id="ctc-amount">₹0</div>
-                                    <div class="stats-label">CTC (Cost to Company)</div>
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 bg-light rounded">
+                                    <div class="display-6 text-primary fw-bold" id="ctc-amount">₹0</div>
+                                    <div class="text-muted mt-2">CTC (Cost to Company)</div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="stats-card">
-                                    <div class="stats-number" id="probation-period">0 months</div>
-                                    <div class="stats-label">Probation Period</div>
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 bg-light rounded">
+                                    <div class="display-6 text-success fw-bold" id="probation-period">0 months</div>
+                                    <div class="text-muted mt-2">Probation Period</div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="stats-card">
-                                    <div class="stats-number" id="notice-period">0 days</div>
-                                    <div class="stats-label">Notice Period</div>
+                            <div class="col-md-4 mb-3">
+                                <div class="p-3 bg-light rounded">
+                                    <div class="display-6 text-warning fw-bold" id="notice-period">0 days</div>
+                                    <div class="text-muted mt-2">Notice Period</div>
                                 </div>
                             </div>
                         </div>
@@ -104,7 +90,7 @@
 
                 <!-- Risk Assessment -->
                 <div class="card shadow-lg mb-4">
-                    <div class="card-header">
+                    <div class="card-header bg-warning text-dark">
                         <h4 class="mb-0">
                             <i class="fas fa-exclamation-triangle me-2"></i>Risk Assessment
                         </h4>
@@ -118,28 +104,56 @@
 
                 <!-- Detailed Analysis -->
                 <div class="card shadow-lg mb-4">
-                    <div class="card-header">
+                    <div class="card-header bg-secondary text-white">
                         <h4 class="mb-0">
                             <i class="fas fa-chart-bar me-2"></i>Detailed Analysis
                         </h4>
                     </div>
                     <div class="card-body p-4">
-                        <div id="detailed-analysis">
-                            <!-- Detailed analysis will be displayed here -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-primary"><i class="fas fa-money-bill-wave me-2"></i>Compensation Analysis</h5>
+                                <div class="bg-light p-3 rounded">
+                                    <p id="compensation-analysis" class="mb-0">Analysis not available</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-primary"><i class="fas fa-file-contract me-2"></i>Terms & Conditions</h5>
+                                <div class="bg-light p-3 rounded">
+                                    <p id="terms-analysis" class="mb-0">Analysis not available</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h5 class="text-primary"><i class="fas fa-clipboard-check me-2"></i>Overall Assessment</h5>
+                            <div class="bg-light p-3 rounded">
+                                <p id="overall-explanation" class="mb-0">Analysis completed successfully.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Recommendations -->
                 <div class="card shadow-lg mb-4">
-                    <div class="card-header">
+                    <div class="card-header bg-success text-white">
                         <h4 class="mb-0">
                             <i class="fas fa-lightbulb me-2"></i>Recommendations
                         </h4>
                     </div>
                     <div class="card-body p-4">
-                        <div id="recommendations-container">
-                            <!-- Recommendations will be displayed here -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-success"><i class="fas fa-handshake me-2"></i>Negotiation Points</h5>
+                                <ul id="negotiation-points" class="list-unstyled">
+                                    <li class="text-muted">No specific negotiation points identified</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-success"><i class="fas fa-question-circle me-2"></i>Questions to Ask</h5>
+                                <ul id="questions-to-ask" class="list-unstyled">
+                                    <li class="text-muted">No specific questions identified</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -166,11 +180,13 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-body text-center p-4">
-                <div class="loading-spinner mb-3"></div>
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
                 <h5>Analyzing Offer Letter</h5>
                 <p class="text-muted">Our AI is analyzing the terms, conditions, and potential risks...</p>
                 <div class="progress">
-                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
                 </div>
             </div>
         </div>
@@ -185,26 +201,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultsSection = document.getElementById('analysis-results');
     const processingModal = new bootstrap.Modal(document.getElementById('processingModal'));
 
-    // Form submission
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // Show processing modal
+        const fileInput = document.getElementById('offer-file');
+        const textInput = document.getElementById('offer_text');
+        
+        if (!fileInput.files.length && !textInput.value.trim()) {
+            alert('Please upload a file or paste text');
+            return;
+        }
+        
         processingModal.show();
         
-        // Simulate progress
         const progressBar = document.querySelector('#processingModal .progress-bar');
         let progress = 0;
         const interval = setInterval(() => {
             progress += Math.random() * 15;
-            if (progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-            }
+            if (progress >= 95) progress = 95;
             progressBar.style.width = progress + '%';
-        }, 200);
+        }, 300);
         
-        // Submit form
         const formData = new FormData(form);
         
         fetch('{% url "offer_analysis" %}', {
@@ -223,135 +240,147 @@ document.addEventListener('DOMContentLoaded', function() {
                 processingModal.hide();
                 
                 if (data.success) {
-                    displayAnalysisResults(data);
-                    PlacementPartner.showAlert('success', 'Offer analysis completed!');
+                    displayAnalysisResults(data.analysis);
+                    //alert('Offer analysis completed successfully!');
                 } else {
-                    PlacementPartner.showAlert('danger', data.message || 'An error occurred. Please try again.');
+                    alert('Error: ' + (data.error || 'Unknown error occurred'));
                 }
-            }, 1000);
+            }, 500);
         })
         .catch(error => {
             clearInterval(interval);
             processingModal.hide();
             console.error('Error:', error);
-            PlacementPartner.showAlert('danger', 'An error occurred. Please try again.');
+            alert('An error occurred: ' + error.message);
         });
     });
 
-    function displayAnalysisResults(data) {
+    function displayAnalysisResults(analysis) {
+        console.log('Displaying analysis:', analysis);
+        
         // Update key information
-        document.getElementById('ctc-amount').textContent = data.ctc || '₹0';
-        document.getElementById('probation-period').textContent = data.probation_period || '0 months';
-        document.getElementById('notice-period').textContent = data.notice_period || '0 days';
+        document.getElementById('ctc-amount').textContent = analysis.ctc || 'Not specified';
+        document.getElementById('probation-period').textContent = analysis.probation_period || 'Not specified';
+        document.getElementById('notice-period').textContent = analysis.notice_period || 'Not specified';
         
         // Display risk flags
         const riskContainer = document.getElementById('risk-flags-container');
         riskContainer.innerHTML = '';
         
-        if (data.risk_flags && data.risk_flags.length > 0) {
-            data.risk_flags.forEach(flag => {
+        if (analysis.risk_flags && analysis.risk_flags.length > 0) {
+            analysis.risk_flags.forEach(flag => {
                 const riskDiv = document.createElement('div');
-                riskDiv.className = 'risk-flag';
-                riskDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>${flag}`;
+                riskDiv.className = 'alert alert-warning d-flex align-items-start mb-2';
+                riskDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2 mt-1"></i>
+                    <div>${flag}</div>
+                `;
                 riskContainer.appendChild(riskDiv);
             });
         } else {
-            riskContainer.innerHTML = '<p class="text-success"><i class="fas fa-check-circle me-2"></i>No significant risks identified</p>';
+            riskContainer.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>No significant risks identified</div>';
         }
         
         // Display detailed analysis
-        const analysisContainer = document.getElementById('detailed-analysis');
-        analysisContainer.innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Compensation Analysis</h5>
-                    <p>${data.compensation_analysis || 'Analysis not available'}</p>
-                </div>
-                <div class="col-md-6">
-                    <h5>Terms & Conditions</h5>
-                    <p>${data.terms_analysis || 'Analysis not available'}</p>
-                </div>
-            </div>
-            <div class="mt-4">
-                <h5>Overall Assessment</h5>
-                <p>${data.explanation || 'Analysis completed successfully.'}</p>
-            </div>
-        `;
+        document.getElementById('compensation-analysis').textContent = 
+            analysis.compensation_analysis || 'No detailed compensation analysis available';
         
-        // Display recommendations
-        const recommendationsContainer = document.getElementById('recommendations-container');
-        recommendationsContainer.innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Negotiation Points</h5>
-                    <ul id="negotiation-points">
-                        ${data.negotiation_points ? data.negotiation_points.map(point => 
-                            `<li class="mb-2"><i class="fas fa-arrow-right text-primary me-2"></i>${point}</li>`
-                        ).join('') : '<li class="text-muted">No specific negotiation points identified</li>'}
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <h5>Questions to Ask</h5>
-                    <ul id="questions-to-ask">
-                        ${data.questions_to_ask ? data.questions_to_ask.map(question => 
-                            `<li class="mb-2"><i class="fas fa-arrow-right text-primary me-2"></i>${question}</li>`
-                        ).join('') : '<li class="text-muted">No specific questions identified</li>'}
-                    </ul>
-                </div>
-            </div>
-        `;
+        document.getElementById('terms-analysis').textContent = 
+            analysis.terms_analysis || 'No detailed terms analysis available';
         
-        // Show results
+        document.getElementById('overall-explanation').textContent = 
+            analysis.explanation || 'Analysis completed successfully.';
+        
+        // Display negotiation points
+        const negotiationList = document.getElementById('negotiation-points');
+        negotiationList.innerHTML = '';
+        
+        if (analysis.negotiation_points && analysis.negotiation_points.length > 0) {
+            analysis.negotiation_points.forEach(point => {
+                const li = document.createElement('li');
+                li.className = 'mb-2';
+                li.innerHTML = `<i class="fas fa-arrow-right text-success me-2"></i>${point}`;
+                negotiationList.appendChild(li);
+            });
+        } else {
+            negotiationList.innerHTML = '<li class="text-muted">No specific negotiation points identified</li>';
+        }
+        
+        // Display questions to ask
+        const questionsList = document.getElementById('questions-to-ask');
+        questionsList.innerHTML = '';
+        
+        if (analysis.questions_to_ask && analysis.questions_to_ask.length > 0) {
+            analysis.questions_to_ask.forEach(question => {
+                const li = document.createElement('li');
+                li.className = 'mb-2';
+                li.innerHTML = `<i class="fas fa-question text-primary me-2"></i>${question}`;
+                questionsList.appendChild(li);
+            });
+        } else {
+            questionsList.innerHTML = '<li class="text-muted">No specific questions identified</li>';
+        }
+        
+        // Show results section
         resultsSection.classList.remove('d-none');
-        resultsSection.scrollIntoView({ behavior: 'smooth' });
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 });
 
-// Load sample offer letters
-function loadSampleOffer(offerType) {
-    const offer = sampleOffers[offerType];
-    if (offer) {
-        document.getElementById('offer_text').value = offer.text;
-        
-        PlacementPartner.showAlert('info', 'Sample offer letter loaded! You can now analyze it.');
-    }
-}
-
-// Download analysis report
 function downloadAnalysis() {
     const analysisData = {
         ctc: document.getElementById('ctc-amount').textContent,
         probation: document.getElementById('probation-period').textContent,
         notice: document.getElementById('notice-period').textContent,
-        risks: Array.from(document.querySelectorAll('.risk-flag')).map(el => el.textContent.trim()),
-        analysis: document.getElementById('detailed-analysis').textContent
+        risks: Array.from(document.querySelectorAll('#risk-flags-container .alert')).map(el => el.textContent.trim()),
+        compensation: document.getElementById('compensation-analysis').textContent,
+        terms: document.getElementById('terms-analysis').textContent,
+        explanation: document.getElementById('overall-explanation').textContent,
+        negotiation: Array.from(document.querySelectorAll('#negotiation-points li')).map(el => el.textContent.trim()),
+        questions: Array.from(document.querySelectorAll('#questions-to-ask li')).map(el => el.textContent.trim())
     };
     
-    const report = `Offer Letter Analysis Report
+    const report = `OFFER LETTER ANALYSIS REPORT
+${'='.repeat(50)}
 
-Key Information:
+KEY INFORMATION:
 - CTC: ${analysisData.ctc}
 - Probation Period: ${analysisData.probation}
 - Notice Period: ${analysisData.notice}
 
-Risk Assessment:
-${analysisData.risks.map(risk => `- ${risk}`).join('\n')}
+RISK ASSESSMENT:
+${analysisData.risks.map(risk => `• ${risk}`).join('\n')}
 
-Detailed Analysis:
-${analysisData.analysis}
+COMPENSATION ANALYSIS:
+${analysisData.compensation}
 
+TERMS & CONDITIONS:
+${analysisData.terms}
+
+OVERALL ASSESSMENT:
+${analysisData.explanation}
+
+NEGOTIATION POINTS:
+${analysisData.negotiation.map(point => `• ${point}`).join('\n')}
+
+QUESTIONS TO ASK:
+${analysisData.questions.map(q => `• ${q}`).join('\n')}
+
+${'='.repeat(50)}
 Generated by Placement Partner
-Date: ${new Date().toLocaleDateString()}`;
+Date: ${new Date().toLocaleString()}`;
     
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(report));
-    element.setAttribute('download', 'Offer_Analysis_Report.txt');
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Offer_Analysis_${new Date().getTime()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
     
-    PlacementPartner.showAlert('success', 'Analysis report downloaded!');
+    //alert('Analysis report downloaded successfully!');
 }
 </script>
-{% endblock %} 
+{% endblock %}

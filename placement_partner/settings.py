@@ -53,7 +53,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 
 # Gemini AI Configuration
 GEMINI_API_KEY = config('GEMINI_API_KEY')
-GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.0-flash-exp')
+GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.5-flash')
 
 # Job Search APIs
 ADZUNA_APP_ID = config('ADZUNA_APP_ID', default='')

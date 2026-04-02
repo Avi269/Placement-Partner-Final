@@ -54,7 +54,7 @@ genai.configure(api_key=API_KEY)
 try:
     GEMINI_MODEL = settings.GEMINI_MODEL
 except AttributeError:
-    GEMINI_MODEL = "gemini-2.0-flash-exp"
+    GEMINI_MODEL = "gemini-2.5-flash"
     logger.warning(f"GEMINI_MODEL not in settings, using default: {GEMINI_MODEL}")
 
 # ============================================================================
